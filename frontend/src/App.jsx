@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { Toaster } from 'react-hot-toast';
 import PersonaIngestion from './components/PersonaIngestion';
 import InboxManager from './components/InboxManager';
 import ActivityPanel from './components/ActivityPanel';
@@ -230,6 +231,30 @@ export default function App() {
                 </main>
             </div>
 
+            {/* Toast Notifications */}
+            <Toaster
+                position="top-right"
+                toastOptions={{
+                    duration: 4000,
+                    style: {
+                        background: isDark ? '#1f2937' : '#fff',
+                        color: isDark ? '#f3f4f6' : '#1f2937',
+                    },
+                    success: {
+                        iconTheme: {
+                            primary: '#10b981',
+                            secondary: '#fff',
+                        },
+                    },
+                    error: {
+                        iconTheme: {
+                            primary: '#ef4444',
+                            secondary: '#fff',
+                        },
+                    },
+                }}
+            />
+
             {/* Shortcuts Help Modal */}
             <ShortcutsHelp isOpen={showShortcuts} onClose={() => setShowShortcuts(false)} />
         </>
@@ -449,40 +474,6 @@ function SettingsView() {
                     </div>
                 )}
             </div>
-
-            <div className="card">
-                <h3 className="text-xl font-bold text-slate-800 mb-4">Preferences</h3>
-                <div className="space-y-4">
-                    <div>
-                        <label className="block text-sm font-medium text-slate-700 mb-2">
-                            Default Response Mode
-                        </label>
-                        <select className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500">
-                            <option>Hybrid (Review before sending)</option>
-                            <option>Ghost (Always review)</option>
-                            <option>Auto (Send automatically)</option>
-                        </select>
-                    </div>
-
-                    <div>
-                        <label className="block text-sm font-medium text-slate-700 mb-2">
-                            Default Tone Shift
-                        </label>
-                        <input
-                            type="range"
-                            min="-10"
-                            max="10"
-                            defaultValue="0"
-                            className="w-full"
-                        />
-                        <div className="flex justify-between text-xs text-slate-500 mt-1">
-                            <span>More Casual</span>
-                            <span>Neutral</span>
-                            <span>More Formal</span>
-                        </div>
-                    </div>
-                </div>
-            </div>
         </div>
     );
 }
@@ -503,70 +494,63 @@ function LoginScreen({ onLogin, onSignup }) {
     };
 
     return (
-        <div className="min-h-screen bg-gradient-to-br from-slate-900 via-indigo-900 to-purple-900 flex items-center justify-center p-6">
-            <div className="bg-white/10 backdrop-blur-xl rounded-2xl p-8 w-full max-w-md border border-white/20 shadow-2xl">
+        <div className="min-h-screen bg-gradient-to-br from-slate-900 via-indigo-900 to-slate-900 flex items-center justify-center p-4">
+            <div className="max-w-md w-full bg-white rounded-2xl shadow-2xl p-8">
                 <div className="text-center mb-8">
-                    <h1 className="text-4xl font-extrabold text-white mb-2">
+                    <h1 className="text-4xl font-extrabold bg-gradient-to-r from-indigo-600 to-purple-600 bg-clip-text text-transparent mb-2">
                         Antigravity Twin
                     </h1>
-                    <p className="text-indigo-200">Your AI-powered digital persona</p>
+                    <p className="text-slate-600">Your AI Persona Replicator</p>
                 </div>
 
                 <form onSubmit={handleSubmit} className="space-y-4">
                     {isSignup && (
                         <div>
-                            <label className="block text-sm font-medium text-white mb-2">Name</label>
+                            <label className="block text-sm font-medium text-slate-700 mb-2">Name</label>
                             <input
                                 type="text"
                                 value={name}
                                 onChange={(e) => setName(e.target.value)}
-                                className="w-full px-4 py-3 rounded-lg bg-white/10 border border-white/20 text-white placeholder-white/50 focus:outline-none focus:ring-2 focus:ring-indigo-400"
-                                placeholder="Your name"
+                                className="w-full px-4 py-3 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500"
                                 required
                             />
                         </div>
                     )}
 
                     <div>
-                        <label className="block text-sm font-medium text-white mb-2">Email</label>
+                        <label className="block text-sm font-medium text-slate-700 mb-2">Email</label>
                         <input
                             type="email"
                             value={email}
                             onChange={(e) => setEmail(e.target.value)}
-                            className="w-full px-4 py-3 rounded-lg bg-white/10 border border-white/20 text-white placeholder-white/50 focus:outline-none focus:ring-2 focus:ring-indigo-400"
-                            placeholder="you@example.com"
+                            className="w-full px-4 py-3 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500"
                             required
                         />
                     </div>
 
                     <div>
-                        <label className="block text-sm font-medium text-white mb-2">Password</label>
+                        <label className="block text-sm font-medium text-slate-700 mb-2">Password</label>
                         <input
                             type="password"
                             value={password}
                             onChange={(e) => setPassword(e.target.value)}
-                            className="w-full px-4 py-3 rounded-lg bg-white/10 border border-white/20 text-white placeholder-white/50 focus:outline-none focus:ring-2 focus:ring-indigo-400"
-                            placeholder="••••••••"
+                            className="w-full px-4 py-3 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500"
                             required
                         />
                     </div>
 
-                    <button
-                        type="submit"
-                        className="w-full py-3 bg-gradient-to-r from-indigo-600 to-purple-600 text-white rounded-lg font-semibold hover:from-indigo-700 hover:to-purple-700 transition-all duration-200 shadow-lg"
-                    >
-                        {isSignup ? 'Create Account' : 'Sign In'}
+                    <button type="submit" className="w-full btn-primary">
+                        {isSignup ? 'Sign Up' : 'Login'}
                     </button>
-                </form>
 
-                <div className="mt-6 text-center">
                     <button
+                        type="button"
                         onClick={() => setIsSignup(!isSignup)}
-                        className="text-indigo-300 hover:text-indigo-200 text-sm"
+                        className="w-full text-sm text-indigo-600 hover:text-indigo-700"
                     >
                         {isSignup ? 'Already have an account? Sign in' : "Don't have an account? Sign up"}
                     </button>
-                </div>
+                </form>
             </div>
         </div>
     );

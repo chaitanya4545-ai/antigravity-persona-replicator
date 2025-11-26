@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import toast from 'react-hot-toast';
 import api from '../services/api';
 
 export default function PersonaIngestion({ persona, onPersonaUpdate }) {
@@ -9,24 +10,27 @@ export default function PersonaIngestion({ persona, onPersonaUpdate }) {
 
     const handleFileChange = async (e) => {
         const files = Array.from(e.target.files);
-        if (files.length === 0) return;
+        if (files.length === 0) {
+            toast.error('Please select files to upload');
+            return;
+        }
 
         setUploading(true);
         setUploadProgress(0);
 
         try {
+            const toastId = toast.loading('Uploading files...');
             const result = await api.uploadSamples(files, setUploadProgress);
             setUploads((prev) => [...result.samples, ...prev]);
 
-            // Show success message
-            showNotification('success', `Successfully uploaded ${files.length} file(s)!`);
+            toast.success(`Successfully uploaded ${files.length} file(s)!`, { id: toastId });
 
             // Refresh persona data
             const updatedPersona = await api.getPersona();
             onPersonaUpdate(updatedPersona);
         } catch (error) {
             console.error('Upload error:', error);
-            showNotification('error', 'Upload failed: ' + (error.response?.data?.error || error.message));
+            toast.error(`Upload failed: ${error.response?.data?.error || error.message}`);
         } finally {
             setUploading(false);
             setUploadProgress(0);
@@ -38,29 +42,16 @@ export default function PersonaIngestion({ persona, onPersonaUpdate }) {
 
         setRetraining(true);
         try {
+            const toastId = toast.loading('Retraining persona...');
             const result = await api.retrainPersona();
             onPersonaUpdate(result.persona);
-            showNotification('success', 'Persona retrained successfully! Your AI twin has learned from your samples.');
+            toast.success('Persona retrained successfully!', { id: toastId });
         } catch (error) {
             console.error('Retrain error:', error);
-            showNotification('error', 'Retrain failed: ' + (error.response?.data?.error || error.message));
+            toast.error(`Retrain failed: ${error.response?.data?.error || error.message}`);
         } finally {
             setRetraining(false);
         }
-    };
-
-    const showNotification = (type, message) => {
-        // Create toast notification
-        const toast = document.createElement('div');
-        toast.className = `fixed top-4 right-4 px-6 py-4 rounded-lg shadow-lg text-white z-50 transition-all ${type === 'success' ? 'bg-emerald-600' : 'bg-red-600'
-            }`;
-        toast.textContent = message;
-        document.body.appendChild(toast);
-
-        setTimeout(() => {
-            toast.style.opacity = '0';
-            setTimeout(() => document.body.removeChild(toast), 300);
-        }, 3000);
     };
 
     return (
