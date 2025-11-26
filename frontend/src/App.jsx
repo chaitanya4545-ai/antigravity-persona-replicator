@@ -3,14 +3,35 @@ import PersonaIngestion from './components/PersonaIngestion';
 import InboxManager from './components/InboxManager';
 import ActivityPanel from './components/ActivityPanel';
 import ChatInterface from './components/ChatInterface';
-import ErrorBoundary from './components/ErrorBoundary';
+import ShortcutsHelp from './components/ShortcutsHelp';
+import { useDarkMode } from './hooks/useDarkMode';
+import { useKeyboardShortcuts } from './hooks/useKeyboardShortcuts';
 import api from './services/api';
 
 export default function App() {
     const [user, setUser] = useState(null);
     const [persona, setPersona] = useState(null);
     const [loading, setLoading] = useState(true);
-    const [activeView, setActiveView] = useState('chat'); // Default to chat
+    const [activeView, setActiveView] = useState('chat');
+    const [showShortcuts, setShowShortcuts] = useState(false);
+
+    // Dark mode
+    const { isDark, toggle: toggleDarkMode } = useDarkMode();
+
+    // Keyboard shortcuts
+    useKeyboardShortcuts({
+        onToggleDarkMode: toggleDarkMode,
+        onFocusChat: () => {
+            setActiveView('chat');
+            setTimeout(() => {
+                const input = document.querySelector('input[type="text"], textarea');
+                input?.focus();
+            }, 100);
+        },
+        onShowHelp: () => setShowShortcuts(true),
+        onNewChat: () => setActiveView('chat'),
+        onEscape: () => setShowShortcuts(false),
+    });
 
     useEffect(() => {
         const token = localStorage.getItem('token');
@@ -71,121 +92,100 @@ export default function App() {
             </div>
         );
     }
-
-    if (!user) {
-        return <LoginScreen onLogin={handleLogin} onSignup={handleSignup} />;
-    }
-
-    return (
-        <div className="min-h-screen bg-gradient-to-br from-slate-50 via-indigo-50 to-slate-50 flex">
-            {/* Sidebar */}
-            <aside className="w-64 bg-gradient-to-b from-slate-900 via-indigo-900 to-slate-900 text-white flex flex-col">
-                <div className="p-6">
-                    <h1 className="text-2xl font-extrabold bg-gradient-to-r from-indigo-400 to-purple-400 bg-clip-text text-transparent">
-                        Antigravity Twin
-                    </h1>
-                    <p className="text-xs text-slate-400 mt-1">AI Persona Replicator</p>
-                </div>
-
-                <nav className="flex-1 px-3">
-                    <NavItem
-                        icon="💬"
-                        label="Chat with Twin"
-                        active={activeView === 'chat'}
-                        onClick={() => setActiveView('chat')}
                     />
-                    <NavItem
-                        icon="👤"
-                        label="Train Persona"
-                        active={activeView === 'persona'}
-                        onClick={() => setActiveView('persona')}
+        < NavItem
+    icon = "👤"
+    label = "Train Persona"
+    active = { activeView === 'persona'
+}
+onClick = {() => setActiveView('persona')}
                     />
-                    <NavItem
-                        icon="📧"
-                        label="Email Inbox"
-                        active={activeView === 'inbox'}
-                        onClick={() => setActiveView('inbox')}
+    < NavItem
+icon = "📧"
+label = "Email Inbox"
+active = { activeView === 'inbox'}
+onClick = {() => setActiveView('inbox')}
                     />
-                    <NavItem
-                        icon="🎤"
-                        label="Voice Features"
-                        active={activeView === 'voice'}
-                        onClick={() => setActiveView('voice')}
+    < NavItem
+icon = "🎤"
+label = "Voice Features"
+active = { activeView === 'voice'}
+onClick = {() => setActiveView('voice')}
                     />
-                    <NavItem
-                        icon="⚙️"
-                        label="Settings"
-                        active={activeView === 'settings'}
-                        onClick={() => setActiveView('settings')}
+    < NavItem
+icon = "⚙️"
+label = "Settings"
+active = { activeView === 'settings'}
+onClick = {() => setActiveView('settings')}
                     />
-                    <NavItem
-                        icon="📊"
-                        label="Activity"
-                        active={activeView === 'activity'}
-                        onClick={() => setActiveView('activity')}
+    < NavItem
+icon = "📊"
+label = "Activity"
+active = { activeView === 'activity'}
+onClick = {() => setActiveView('activity')}
                     />
-                </nav>
+                </nav >
 
-                <div className="p-4 border-t border-white/10">
-                    <div className="text-xs text-slate-400 mb-2">
-                        {user.name || user.email}
-                    </div>
-                    <button
-                        onClick={handleLogout}
-                        className="w-full py-2 px-4 bg-white/10 hover:bg-white/20 rounded-lg text-sm transition-colors"
-                    >
-                        Logout
-                    </button>
-                </div>
-            </aside>
-
-            {/* Main Content */}
-            <main className="flex-1 overflow-y-auto">
-                <div className="max-w-6xl mx-auto p-8">
-                    {activeView === 'chat' && (
-                        <div>
-                            <h2 className="text-3xl font-bold text-slate-800 mb-6">Chat with Your AI Twin</h2>
-                            <ChatInterface persona={persona} />
-                        </div>
-                    )}
-
-                    {activeView === 'persona' && (
-                        <div>
-                            <h2 className="text-3xl font-bold text-slate-800 mb-6">Train Your Persona</h2>
-                            <PersonaIngestion persona={persona} onPersonaUpdate={setPersona} />
-                        </div>
-                    )}
-
-                    {activeView === 'inbox' && (
-                        <div>
-                            <h2 className="text-3xl font-bold text-slate-800 mb-6">Email Inbox</h2>
-                            <InboxManager persona={persona} />
-                        </div>
-                    )}
-
-                    {activeView === 'voice' && (
-                        <div>
-                            <h2 className="text-3xl font-bold text-slate-800 mb-6">Voice Features</h2>
-                            <VoiceFeatures persona={persona} />
-                        </div>
-                    )}
-
-                    {activeView === 'settings' && (
-                        <div>
-                            <h2 className="text-3xl font-bold text-slate-800 mb-6">Settings</h2>
-                            <SettingsView />
-                        </div>
-                    )}
-
-                    {activeView === 'activity' && (
-                        <div>
-                            <h2 className="text-3xl font-bold text-slate-800 mb-6">Activity & Metrics</h2>
-                            <ActivityPanel />
-                        </div>
-                    )}
-                </div>
-            </main>
+    <div className="p-4 border-t border-white/10">
+        <div className="text-xs text-slate-400 mb-2">
+            {user.name || user.email}
         </div>
+        <button
+            onClick={handleLogout}
+            className="w-full py-2 px-4 bg-white/10 hover:bg-white/20 rounded-lg text-sm transition-colors"
+        >
+            Logout
+        </button>
+    </div>
+            </aside >
+
+    {/* Main Content */ }
+    < main className = "flex-1 overflow-y-auto" >
+        <div className="max-w-6xl mx-auto p-8">
+            {activeView === 'chat' && (
+                <div>
+                    <h2 className="text-3xl font-bold text-slate-800 mb-6">Chat with Your AI Twin</h2>
+                    <ChatInterface persona={persona} />
+                </div>
+            )}
+
+            {activeView === 'persona' && (
+                <div>
+                    <h2 className="text-3xl font-bold text-slate-800 mb-6">Train Your Persona</h2>
+                    <PersonaIngestion persona={persona} onPersonaUpdate={setPersona} />
+                </div>
+            )}
+
+            {activeView === 'inbox' && (
+                <div>
+                    <h2 className="text-3xl font-bold text-slate-800 mb-6">Email Inbox</h2>
+                    <InboxManager persona={persona} />
+                </div>
+            )}
+
+            {activeView === 'voice' && (
+                <div>
+                    <h2 className="text-3xl font-bold text-slate-800 mb-6">Voice Features</h2>
+                    <VoiceFeatures persona={persona} />
+                </div>
+            )}
+
+            {activeView === 'settings' && (
+                <div>
+                    <h2 className="text-3xl font-bold text-slate-800 mb-6">Settings</h2>
+                    <SettingsView />
+                </div>
+            )}
+
+            {activeView === 'activity' && (
+                <div>
+                    <h2 className="text-3xl font-bold text-slate-800 mb-6">Activity & Metrics</h2>
+                    <ActivityPanel />
+                </div>
+            )}
+        </div>
+            </main >
+        </div >
     );
 }
 
