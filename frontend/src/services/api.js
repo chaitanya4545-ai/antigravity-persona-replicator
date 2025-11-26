@@ -53,6 +53,35 @@ const api = {
         return data;
     },
 
+    getAllPersonas: async () => {
+        const { data } = await apiClient.get('/personas/all');
+        return data;
+    },
+
+    createPersona: async (name, description, color) => {
+        const { data } = await apiClient.post('/personas/create', {
+            name,
+            description,
+            color
+        });
+        return data;
+    },
+
+    activatePersona: async (personaId) => {
+        const { data } = await apiClient.post(`/personas/${personaId}/activate`);
+        return data;
+    },
+
+    updatePersona: async (personaId, updates) => {
+        const { data } = await apiClient.put(`/personas/${personaId}`, updates);
+        return data;
+    },
+
+    deletePersona: async (personaId) => {
+        const { data } = await apiClient.delete(`/personas/${personaId}`);
+        return data;
+    },
+
     uploadSamples: async (files, onProgress) => {
         const formData = new FormData();
         files.forEach((file) => formData.append('files', file));

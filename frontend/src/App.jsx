@@ -6,6 +6,8 @@ import ActivityPanel from './components/ActivityPanel';
 import ChatInterface from './components/ChatInterface';
 import ShortcutsHelp from './components/ShortcutsHelp';
 import OnboardingTour from './components/OnboardingTour';
+import PersonaSelector from './components/PersonaSelector';
+import PersonaManagement from './components/PersonaManagement';
 import { useDarkMode } from './hooks/useDarkMode';
 import { useKeyboardShortcuts } from './hooks/useKeyboardShortcuts';
 import { useOnboarding } from './hooks/useOnboarding';
@@ -63,6 +65,10 @@ export default function App() {
         }
     };
 
+    const handlePersonaChange = (newPersona) => {
+        setPersona(newPersona);
+    };
+
     const handleLogin = async (email, password) => {
         try {
             const response = await api.login(email, password);
@@ -100,145 +106,120 @@ export default function App() {
     }
 
     if (!user) {
-        return <LoginScreen onLogin={handleLogin} onSignup={handleSignup} />;
+        return <LoginScreen onLogin={handleLogin} onSignup={handleSignup} isDark={isDark} />;
     }
 
     return (
-        <>
-            <div className="min-h-screen bg-gradient-to-br from-slate-50 via-indigo-50 to-slate-50 dark:from-slate-900 dark:via-indigo-950 dark:to-slate-900 flex">
-                {/* Sidebar */}
-                <aside className="w-64 bg-gradient-to-b from-slate-900 via-indigo-900 to-slate-900 dark:from-slate-950 dark:via-indigo-950 dark:to-slate-950 text-white flex flex-col">
-                    <div className="p-6">
-                        <h1 className="text-2xl font-extrabold bg-gradient-to-r from-indigo-400 to-purple-400 bg-clip-text text-transparent">
-                            Antigravity Twin
-                        </h1>
-                        <p className="text-xs text-slate-400 mt-1">AI Persona Replicator</p>
-                    </div>
+        <div className="min-h-screen bg-slate-50 dark:bg-slate-900 transition-colors">
+            {/* Sidebar */}
+            <aside className="fixed left-0 top-0 h-full w-64 bg-slate-900 dark:bg-slate-950 text-white p-4 flex flex-col">
+                {/* Logo */}
+                <div className="mb-6">
+                    <h1 className="text-2xl font-bold bg-gradient-to-r from-indigo-400 to-purple-400 bg-clip-text text-transparent">
+                        Antigravity
+                    </h1>
+                    <p className="text-xs text-slate-400 mt-1">Persona Replicator</p>
+                </div>
 
-                    <nav className="flex-1 px-3">
-                        <NavItem
-                            data-tour="chat"
-                            icon="💬"
-                            label="Chat with Twin"
-                            active={activeView === 'chat'}
-                            onClick={() => setActiveView('chat')}
-                        />
-                        <NavItem
-                            data-tour="persona"
-                            icon="👤"
-                            label="Train Persona"
-                            active={activeView === 'persona'}
-                            onClick={() => setActiveView('persona')}
-                        />
-                        <NavItem
-                            icon="📧"
-                            label="Email Inbox"
-                            active={activeView === 'inbox'}
-                            onClick={() => setActiveView('inbox')}
-                        />
-                        <NavItem
-                            icon="🎤"
-                            label="Voice Features"
-                            active={activeView === 'voice'}
-                            onClick={() => setActiveView('voice')}
-                        />
-                        <NavItem
-                            icon="⚙️"
-                            label="Settings"
-                            active={activeView === 'settings'}
-                            onClick={() => setActiveView('settings')}
-                        />
-                        <NavItem
-                            icon="📊"
-                            label="Activity"
-                            active={activeView === 'activity'}
-                            onClick={() => setActiveView('activity')}
-                        />
-                    </nav>
+                {/* Persona Selector */}
+                <div className="mb-6" data-tour="persona-selector">
+                    <PersonaSelector
+                        activePersona={persona}
+                        onPersonaChange={handlePersonaChange}
+                    />
+                </div>
 
-                    <div className="p-4 border-t border-slate-700 dark:border-slate-800 space-y-3">
-                        {/* Dark Mode Toggle */}
-                        <button
-                            data-tour="dark-mode"
-                            onClick={toggleDarkMode}
-                            className="w-full px-4 py-2 bg-slate-800 dark:bg-slate-900 hover:bg-slate-700 dark:hover:bg-slate-800 rounded-lg transition-colors flex items-center justify-center gap-2"
-                            title="Toggle dark mode (Ctrl+D)"
-                        >
-                            <span className="text-xl">{isDark ? '☀️' : '🌙'}</span>
-                            <span className="text-sm">{isDark ? 'Light' : 'Dark'} Mode</span>
-                        </button>
+                {/* Navigation */}
+                <nav className="flex-1 space-y-2">
+                    <NavItem
+                        data-tour="chat"
+                        icon="💬"
+                        label="Chat with Twin"
+                        active={activeView === 'chat'}
+                        onClick={() => setActiveView('chat')}
+                    />
+                    <NavItem
+                        data-tour="train"
+                        icon="🎓"
+                        label="Train Persona"
+                        active={activeView === 'train'}
+                        onClick={() => setActiveView('train')}
+                    />
+                    <NavItem
+                        data-tour="personas"
+                        icon="👥"
+                        label="Manage Personas"
+                        active={activeView === 'personas'}
+                        onClick={() => setActiveView('personas')}
+                    />
+                    <NavItem
+                        data-tour="inbox"
+                        icon="📧"
+                        label="Inbox Manager"
+                        active={activeView === 'inbox'}
+                        onClick={() => setActiveView('inbox')}
+                    />
+                    <NavItem
+                        data-tour="activity"
+                        icon="📊"
+                        label="Activity"
+                        active={activeView === 'activity'}
+                        onClick={() => setActiveView('activity')}
+                    />
+                </nav>
 
-                        {/* Keyboard Shortcuts Help */}
-                        <button
-                            data-tour="shortcuts"
-                            onClick={() => setShowShortcuts(true)}
-                            className="w-full px-4 py-2 bg-slate-800 dark:bg-slate-900 hover:bg-slate-700 dark:hover:bg-slate-800 rounded-lg transition-colors flex items-center justify-center gap-2"
-                            title="Show keyboard shortcuts (Ctrl+/)"
-                        >
-                            <span className="text-xl">⌨️</span>
-                            <span className="text-sm">Shortcuts</span>
-                        </button>
+                {/* Settings */}
+                <div className="border-t border-slate-800 pt-4 space-y-2">
+                    <button
+                        onClick={toggleDarkMode}
+                        className="w-full flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-slate-800 transition-colors text-left"
+                    >
+                        <span>{isDark ? '☀️' : '🌙'}</span>
+                        <span className="text-sm">{isDark ? 'Light Mode' : 'Dark Mode'}</span>
+                    </button>
+                    <button
+                        onClick={() => setShowShortcuts(true)}
+                        className="w-full flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-slate-800 transition-colors text-left"
+                    >
+                        <span>⌨️</span>
+                        <span className="text-sm">Shortcuts</span>
+                    </button>
+                    <button
+                        onClick={restartTour}
+                        className="w-full flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-slate-800 transition-colors text-left"
+                    >
+                        <span>🎯</span>
+                        <span className="text-sm">Restart Tour</span>
+                    </button>
+                    <button
+                        onClick={handleLogout}
+                        className="w-full flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-slate-800 transition-colors text-left text-red-400"
+                    >
+                        <span>🚪</span>
+                        <span className="text-sm">Logout</span>
+                    </button>
+                </div>
 
-                        {/* User Info */}
-                        <div className="text-xs text-slate-400 pt-2">
-                            {user.name || user.email}
-                        </div>
-                        <button
-                            onClick={handleLogout}
-                            className="w-full py-2 px-4 bg-red-600 hover:bg-red-700 rounded-lg text-sm transition-colors font-medium"
-                        >
-                            Logout
-                        </button>
-                    </div>
-                </aside>
+                {/* User Info */}
+                <div className="mt-4 pt-4 border-t border-slate-800">
+                    <p className="text-sm text-slate-400 truncate">{user.email}</p>
+                </div>
+            </aside>
 
-                {/* Main Content */}
-                <main className="flex-1 overflow-y-auto">
-                    <div className="max-w-6xl mx-auto p-8">
-                        {activeView === 'chat' && (
-                            <div>
-                                <h2 className="text-3xl font-bold text-slate-800 dark:text-slate-100 mb-6">Chat with Your AI Twin</h2>
-                                <ChatInterface persona={persona} />
-                            </div>
-                        )}
-
-                        {activeView === 'persona' && (
-                            <div>
-                                <h2 className="text-3xl font-bold text-slate-800 dark:text-slate-100 mb-6">Train Your Persona</h2>
-                                <PersonaIngestion persona={persona} onPersonaUpdate={setPersona} />
-                            </div>
-                        )}
-
-                        {activeView === 'inbox' && (
-                            <div>
-                                <h2 className="text-3xl font-bold text-slate-800 dark:text-slate-100 mb-6">Email Inbox</h2>
-                                <InboxManager persona={persona} />
-                            </div>
-                        )}
-
-                        {activeView === 'voice' && (
-                            <div>
-                                <h2 className="text-3xl font-bold text-slate-800 dark:text-slate-100 mb-6">Voice Features</h2>
-                                <VoiceFeatures persona={persona} />
-                            </div>
-                        )}
-
-                        {activeView === 'settings' && (
-                            <div>
-                                <h2 className="text-3xl font-bold text-slate-800 dark:text-slate-100 mb-6">Settings</h2>
-                                <SettingsView restartTour={restartTour} />
-                            </div>
-                        )}
-
-                        {activeView === 'activity' && (
-                            <div>
-                                <h2 className="text-3xl font-bold text-slate-800 dark:text-slate-100 mb-6">Activity & Metrics</h2>
-                                <ActivityPanel />
-                            </div>
-                        )}
-                    </div>
-                </main>
-            </div>
+            {/* Main Content */}
+            <main className="ml-64 p-8">
+                <div className="max-w-6xl mx-auto">
+                    {activeView === 'chat' && <ChatInterface persona={persona} />}
+                    {activeView === 'train' && (
+                        <PersonaIngestion persona={persona} onPersonaUpdate={setPersona} />
+                    )}
+                    {activeView === 'personas' && (
+                        <PersonaManagement onPersonaChange={handlePersonaChange} />
+                    )}
+                    {activeView === 'inbox' && <InboxManager />}
+                    {activeView === 'activity' && <ActivityPanel />}
+                </div>
+            </main>
 
             {/* Toast Notifications */}
             <Toaster
@@ -273,7 +254,7 @@ export default function App() {
 
             {/* Shortcuts Help Modal */}
             <ShortcutsHelp isOpen={showShortcuts} onClose={() => setShowShortcuts(false)} />
-        </>
+        </div>
     );
 }
 
@@ -281,306 +262,105 @@ function NavItem({ icon, label, active, onClick, ...props }) {
     return (
         <button
             onClick={onClick}
-            className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg mb-2 transition-all ${active
-                ? 'bg-indigo-600 text-white shadow-lg'
-                : 'text-slate-300 hover:bg-white/10 hover:text-white'
+            className={`w-full flex items-center gap-3 px-3 py-2 rounded-lg transition-colors text-left ${active
+                    ? 'bg-indigo-600 text-white'
+                    : 'text-slate-300 hover:bg-slate-800'
                 }`}
             {...props}
         >
             <span className="text-xl">{icon}</span>
-            <span className="font-medium">{label}</span>
+            <span className="text-sm font-medium">{label}</span>
         </button>
     );
 }
 
-function VoiceFeatures({ persona }) {
-    const [isRecording, setIsRecording] = useState(false);
-    const [transcript, setTranscript] = useState('');
-    const [aiResponse, setAiResponse] = useState('');
-    const [recognition, setRecognition] = useState(null);
-
-    useEffect(() => {
-        // Initialize speech recognition
-        if ('webkitSpeechRecognition' in window || 'SpeechRecognition' in window) {
-            const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
-            const recog = new SpeechRecognition();
-            recog.continuous = false;
-            recog.interimResults = false;
-            recog.lang = 'en-US';
-
-            recog.onresult = (event) => {
-                const text = event.results[0][0].transcript;
-                setTranscript(text);
-                handleVoiceInput(text);
-            };
-
-            recog.onerror = (event) => {
-                console.error('Speech recognition error:', event.error);
-                setIsRecording(false);
-            };
-
-            recog.onend = () => {
-                setIsRecording(false);
-            };
-
-            setRecognition(recog);
-        }
-    }, []);
-
-    const handleVoiceInput = async (text) => {
-        try {
-            const response = await api.sendChatMessage(text);
-            setAiResponse(response.message);
-            speakText(response.message);
-        } catch (error) {
-            console.error('Failed to get AI response:', error);
-        }
-    };
-
-    const speakText = (text) => {
-        if ('speechSynthesis' in window) {
-            const utterance = new SpeechSynthesisUtterance(text);
-            utterance.rate = 1.0;
-            utterance.pitch = 1.0;
-            window.speechSynthesis.speak(utterance);
-        }
-    };
-
-    const toggleRecording = () => {
-        if (!recognition) {
-            alert('Speech recognition not supported in this browser');
-            return;
-        }
-
-        if (isRecording) {
-            recognition.stop();
-        } else {
-            setTranscript('');
-            setAiResponse('');
-            recognition.start();
-            setIsRecording(true);
-        }
-    };
-
-    if (!persona) {
-        return (
-            <div className="card text-center py-12">
-                <div className="text-6xl mb-4">🎤</div>
-                <h3 className="text-xl font-semibold text-slate-800 dark:text-slate-100 mb-2">Voice Features</h3>
-                <p className="text-slate-600 dark:text-slate-400">Upload training samples first to create your persona</p>
-            </div>
-        );
-    }
-
-    return (
-        <div className="space-y-6">
-            <div className="card">
-                <h3 className="text-xl font-bold text-slate-800 dark:text-slate-100 mb-4">Voice-to-Text & AI Response</h3>
-
-                <div className="text-center mb-6">
-                    <button
-                        onClick={toggleRecording}
-                        className={`w-32 h-32 rounded-full flex items-center justify-center text-6xl transition-all ${isRecording
-                            ? 'bg-red-500 animate-pulse shadow-lg'
-                            : 'bg-indigo-600 hover:bg-indigo-700 shadow-md'
-                            }`}
-                    >
-                        {isRecording ? '⏹️' : '🎤'}
-                    </button>
-                    <p className="mt-4 text-sm text-slate-600 dark:text-slate-400">
-                        {isRecording ? 'Recording... Click to stop' : 'Click to start recording'}
-                    </p>
-                </div>
-
-                {transcript && (
-                    <div className="bg-slate-100 dark:bg-slate-700 rounded-lg p-4 mb-4">
-                        <p className="text-sm text-slate-600 dark:text-slate-400 mb-1">You said:</p>
-                        <p className="text-slate-800 dark:text-slate-100">{transcript}</p>
-                    </div>
-                )}
-
-                {aiResponse && (
-                    <div className="bg-indigo-50 dark:bg-indigo-900/30 rounded-lg p-4">
-                        <div className="flex items-center justify-between mb-2">
-                            <p className="text-sm text-indigo-600 dark:text-indigo-400">AI Twin responded:</p>
-                            <button
-                                onClick={() => speakText(aiResponse)}
-                                className="text-sm px-3 py-1 bg-indigo-600 text-white rounded hover:bg-indigo-700"
-                            >
-                                🔊 Play
-                            </button>
-                        </div>
-                        <p className="text-slate-800 dark:text-slate-100">{aiResponse}</p>
-                    </div>
-                )}
-            </div>
-
-            <div className="card">
-                <h3 className="text-xl font-bold text-slate-800 dark:text-slate-100 mb-4">Text-to-Speech Test</h3>
-                <textarea
-                    placeholder="Type text to hear your AI twin speak..."
-                    className="w-full px-4 py-3 border border-slate-300 dark:border-slate-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 dark:bg-slate-700 dark:text-white mb-4"
-                    rows="4"
-                    id="tts-input"
-                />
-                <button
-                    onClick={() => {
-                        const text = document.getElementById('tts-input').value;
-                        if (text) speakText(text);
-                    }}
-                    className="btn-primary"
-                >
-                    🔊 Speak Text
-                </button>
-            </div>
-        </div>
-    );
-}
-
-function SettingsView({ restartTour }) {
-    const [gmailConnected, setGmailConnected] = useState(false);
-    const [autoReply, setAutoReply] = useState(false);
-
-    return (
-        <div className="space-y-6">
-            <div className="card">
-                <h3 className="text-xl font-bold text-slate-800 dark:text-slate-100 mb-4">Onboarding Tour</h3>
-                <p className="text-slate-600 dark:text-slate-400 mb-4">
-                    Want to see the app tour again?
-                </p>
-                <button
-                    onClick={restartTour}
-                    className="btn-primary"
-                >
-                    🎯 Restart Tour
-                </button>
-            </div>
-
-            <div className="card">
-                <h3 className="text-xl font-bold text-slate-800 dark:text-slate-100 mb-4">Gmail Integration</h3>
-
-                {!gmailConnected ? (
-                    <div>
-                        <p className="text-slate-600 dark:text-slate-400 mb-4">
-                            Connect your Gmail account to automatically sync emails and enable auto-reply.
-                        </p>
-                        <button
-                            onClick={() => alert('Gmail OAuth setup required. Please contact support for setup instructions.')}
-                            className="btn-primary"
-                        >
-                            📧 Connect Gmail Account
-                        </button>
-                        <p className="text-xs text-slate-500 dark:text-slate-400 mt-2">
-                            Note: Requires Google Cloud OAuth setup
-                        </p>
-                    </div>
-                ) : (
-                    <div>
-                        <div className="flex items-center justify-between mb-4 p-4 bg-green-50 dark:bg-green-900/30 rounded-lg">
-                            <div>
-                                <p className="font-semibold text-green-800 dark:text-green-400">✅ Gmail Connected</p>
-                                <p className="text-sm text-green-600 dark:text-green-500">your.email@gmail.com</p>
-                            </div>
-                            <button className="text-sm text-red-600 hover:text-red-700 dark:text-red-400">
-                                Disconnect
-                            </button>
-                        </div>
-
-                        <div className="flex items-center justify-between p-4 bg-slate-50 dark:bg-slate-700 rounded-lg">
-                            <div>
-                                <p className="font-semibold text-slate-800 dark:text-slate-100">Auto-Reply</p>
-                                <p className="text-sm text-slate-600 dark:text-slate-400">Automatically reply to emails using your AI twin</p>
-                            </div>
-                            <label className="relative inline-flex items-center cursor-pointer">
-                                <input
-                                    type="checkbox"
-                                    checked={autoReply}
-                                    onChange={(e) => setAutoReply(e.target.checked)}
-                                    className="sr-only peer"
-                                />
-                                <div className="w-11 h-6 bg-slate-300 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-indigo-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-indigo-600"></div>
-                            </label>
-                        </div>
-                    </div>
-                )}
-            </div>
-        </div>
-    );
-}
-
-function LoginScreen({ onLogin, onSignup }) {
-    const [isSignup, setIsSignup] = useState(false);
+function LoginScreen({ onLogin, onSignup, isDark }) {
+    const [isLogin, setIsLogin] = useState(true);
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
     const [name, setName] = useState('');
 
     const handleSubmit = (e) => {
         e.preventDefault();
-        if (isSignup) {
-            onSignup(email, password, name);
-        } else {
+        if (isLogin) {
             onLogin(email, password);
+        } else {
+            onSignup(email, password, name);
         }
     };
 
     return (
         <div className="min-h-screen bg-gradient-to-br from-slate-900 via-indigo-900 to-slate-900 flex items-center justify-center p-4">
-            <div className="max-w-md w-full bg-white rounded-2xl shadow-2xl p-8">
+            <div className="w-full max-w-md">
                 <div className="text-center mb-8">
-                    <h1 className="text-4xl font-extrabold bg-gradient-to-r from-indigo-600 to-purple-600 bg-clip-text text-transparent mb-2">
-                        Antigravity Twin
-                    </h1>
-                    <p className="text-slate-600">Your AI Persona Replicator</p>
+                    <h1 className="text-4xl font-bold text-white mb-2">Antigravity</h1>
+                    <p className="text-indigo-300">Your AI Persona Replicator</p>
                 </div>
 
-                <form onSubmit={handleSubmit} className="space-y-4">
-                    {isSignup && (
+                <div className="bg-white dark:bg-slate-800 rounded-xl shadow-2xl p-8">
+                    <h2 className="text-2xl font-bold text-slate-800 dark:text-white mb-6">
+                        {isLogin ? 'Welcome Back' : 'Create Account'}
+                    </h2>
+
+                    <form onSubmit={handleSubmit} className="space-y-4">
+                        {!isLogin && (
+                            <div>
+                                <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
+                                    Name
+                                </label>
+                                <input
+                                    type="text"
+                                    value={name}
+                                    onChange={(e) => setName(e.target.value)}
+                                    className="w-full px-4 py-2 border border-slate-300 dark:border-slate-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 dark:bg-slate-700 dark:text-white"
+                                    required={!isLogin}
+                                />
+                            </div>
+                        )}
+
                         <div>
-                            <label className="block text-sm font-medium text-slate-700 mb-2">Name</label>
+                            <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
+                                Email
+                            </label>
                             <input
-                                type="text"
-                                value={name}
-                                onChange={(e) => setName(e.target.value)}
-                                className="w-full px-4 py-3 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                                type="email"
+                                value={email}
+                                onChange={(e) => setEmail(e.target.value)}
+                                className="w-full px-4 py-2 border border-slate-300 dark:border-slate-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 dark:bg-slate-700 dark:text-white"
                                 required
                             />
                         </div>
-                    )}
 
-                    <div>
-                        <label className="block text-sm font-medium text-slate-700 mb-2">Email</label>
-                        <input
-                            type="email"
-                            value={email}
-                            onChange={(e) => setEmail(e.target.value)}
-                            className="w-full px-4 py-3 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500"
-                            required
-                        />
+                        <div>
+                            <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
+                                Password
+                            </label>
+                            <input
+                                type="password"
+                                value={password}
+                                onChange={(e) => setPassword(e.target.value)}
+                                className="w-full px-4 py-2 border border-slate-300 dark:border-slate-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 dark:bg-slate-700 dark:text-white"
+                                required
+                            />
+                        </div>
+
+                        <button
+                            type="submit"
+                            className="w-full bg-indigo-600 text-white py-2 rounded-lg hover:bg-indigo-700 font-medium transition-colors"
+                        >
+                            {isLogin ? 'Login' : 'Sign Up'}
+                        </button>
+                    </form>
+
+                    <div className="mt-6 text-center">
+                        <button
+                            onClick={() => setIsLogin(!isLogin)}
+                            className="text-sm text-indigo-600 dark:text-indigo-400 hover:underline"
+                        >
+                            {isLogin ? "Don't have an account? Sign up" : 'Already have an account? Login'}
+                        </button>
                     </div>
-
-                    <div>
-                        <label className="block text-sm font-medium text-slate-700 mb-2">Password</label>
-                        <input
-                            type="password"
-                            value={password}
-                            onChange={(e) => setPassword(e.target.value)}
-                            className="w-full px-4 py-3 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500"
-                            required
-                        />
-                    </div>
-
-                    <button type="submit" className="w-full btn-primary">
-                        {isSignup ? 'Sign Up' : 'Login'}
-                    </button>
-
-                    <button
-                        type="button"
-                        onClick={() => setIsSignup(!isSignup)}
-                        className="w-full text-sm text-indigo-600 hover:text-indigo-700"
-                    >
-                        {isSignup ? 'Already have an account? Sign in' : "Don't have an account? Sign up"}
-                    </button>
-                </form>
+                </div>
             </div>
         </div>
     );
