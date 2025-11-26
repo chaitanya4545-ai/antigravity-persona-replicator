@@ -3,6 +3,7 @@ import multer from 'multer';
 import { query } from '../db/connection.js';
 import authMiddleware from '../middleware/auth.js';
 import { ingestSamples, retrainPersona } from '../services/ingestWorker.js';
+import logger from '../utils/logger.js';
 
 const router = express.Router();
 const upload = multer({ dest: 'uploads/' });
@@ -91,6 +92,34 @@ router.post('/retrain', authMiddleware, async (req, res) => {
     } catch (error) {
         console.error('Retrain error:', error);
         res.status(500).json({ error: 'Failed to retrain persona' });
+    }
+});
+
+// Export persona data
+router.get('/export', authMiddleware, async (req, res) => {
+    try {
+        const result = await query(
+            'SELECT * FROM personas WHERE user_id = $1 ORDER BY created_at DESC LIMIT 1',
+            [req.userId]
+        );
+
+        if (result.rows.length === 0) {
+            return res.status(404).json({ error: 'No persona found' });
+        }
+
+        const exportData = {
+            exported_at: new Date().toISOString(),
+            persona: result.rows[0]
+        };
+
+        res.setHeader('Content-Type', 'application/json');
+        res.setHeader('Content-Disposition', `attachment; filename=persona-data-${new Date().toISOString().split('T')[0]}.json`);
+
+        logger.info('Persona exported', { userId: req.userId, personaId: result.rows[0].id });
+        res.json(exportData);
+    } catch (error) {
+        logger.error('Export persona error', { error: error.message, userId: req.userId });
+        res.status(500).json({ error: 'Export failed' });
     }
 });
 

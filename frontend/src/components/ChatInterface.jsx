@@ -1,7 +1,9 @@
 import React, { useState, useEffect, useRef } from 'react';
+import toast from 'react-hot-toast';
 import MarkdownMessage from './MarkdownMessage';
 import SearchBar from './SearchBar';
 import api from '../services/api';
+import { downloadFile } from '../utils/download';
 
 export default function ChatInterface({ persona }) {
     const [messages, setMessages] = useState([]);
@@ -66,6 +68,28 @@ export default function ChatInterface({ persona }) {
     const handleClearSearch = () => {
         setSearchQuery('');
         setSearchResults([]);
+    };
+
+    const handleExportJSON = async () => {
+        try {
+            const blob = await api.exportChatJSON();
+            const filename = `chat-history-${new Date().toISOString().split('T')[0]}.json`;
+            downloadFile(blob, filename);
+            toast.success('Chat history exported as JSON!');
+        } catch (error) {
+            toast.error('Export failed');
+        }
+    };
+
+    const handleExportCSV = async () => {
+        try {
+            const blob = await api.exportChatCSV();
+            const filename = `chat-history-${new Date().toISOString().split('T')[0]}.csv`;
+            downloadFile(blob, filename);
+            toast.success('Chat history exported as CSV!');
+        } catch (error) {
+            toast.error('Export failed');
+        }
     };
 
     const highlightText = (text, query) => {
@@ -161,6 +185,22 @@ export default function ChatInterface({ persona }) {
                     resultsCount={searchQuery ? searchResults.length : null}
                     loading={searching}
                 />
+
+                {/* Export Buttons */}
+                <div className="flex gap-2 mt-3">
+                    <button
+                        onClick={handleExportJSON}
+                        className="flex-1 py-2 px-3 bg-slate-100 dark:bg-slate-700 text-slate-700 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-600 rounded-lg text-sm font-medium transition-colors"
+                    >
+                        📥 Export JSON
+                    </button>
+                    <button
+                        onClick={handleExportCSV}
+                        className="flex-1 py-2 px-3 bg-slate-100 dark:bg-slate-700 text-slate-700 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-600 rounded-lg text-sm font-medium transition-colors"
+                    >
+                        📊 Export CSV
+                    </button>
+                </div>
             </div>
 
             {/* Messages */}

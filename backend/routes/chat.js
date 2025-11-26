@@ -6,6 +6,7 @@ import { validate } from '../middleware/validate.js';
 import { chatMessageSchema } from '../validators/chat.js';
 import { chatLimiter } from '../middleware/rateLimiter.js';
 import logger from '../utils/logger.js';
+import { convertToCSV } from '../utils/csv.js';
 
 const router = express.Router();
 
@@ -110,6 +111,52 @@ router.get('/search', authMiddleware, async (req, res) => {
     } catch (error) {
         logger.error('Search error', { error: error.message, userId: req.userId });
         res.status(500).json({ error: 'Search failed' });
+    }
+});
+
+// Export chat history as JSON
+router.get('/export/json', authMiddleware, async (req, res) => {
+    try {
+        const result = await query(
+            'SELECT * FROM chat_messages WHERE user_id = $1 ORDER BY created_at ASC',
+            [req.userId]
+        );
+
+        const exportData = {
+            exported_at: new Date().toISOString(),
+            message_count: result.rows.length,
+            messages: result.rows
+        };
+
+        res.setHeader('Content-Type', 'application/json');
+        res.setHeader('Content-Disposition', `attachment; filename=chat-history-${new Date().toISOString().split('T')[0]}.json`);
+
+        logger.info('Chat exported as JSON', { userId: req.userId, messageCount: result.rows.length });
+        res.json(exportData);
+    } catch (error) {
+        logger.error('Export JSON error', { error: error.message, userId: req.userId });
+        res.status(500).json({ error: 'Export failed' });
+    }
+});
+
+// Export chat history as CSV
+router.get('/export/csv', authMiddleware, async (req, res) => {
+    try {
+        const result = await query(
+            'SELECT role, content, created_at FROM chat_messages WHERE user_id = $1 ORDER BY created_at ASC',
+            [req.userId]
+        );
+
+        const csv = convertToCSV(result.rows);
+
+        res.setHeader('Content-Type', 'text/csv');
+        res.setHeader('Content-Disposition', `attachment; filename=chat-history-${new Date().toISOString().split('T')[0]}.csv`);
+
+        logger.info('Chat exported as CSV', { userId: req.userId, messageCount: result.rows.length });
+        res.send(csv);
+    } catch (error) {
+        logger.error('Export CSV error', { error: error.message, userId: req.userId });
+        res.status(500).json({ error: 'Export failed' });
     }
 });
 

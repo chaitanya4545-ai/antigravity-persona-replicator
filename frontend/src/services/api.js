@@ -72,6 +72,13 @@ const api = {
         return data;
     },
 
+    exportPersona: async () => {
+        const response = await apiClient.get('/personas/export', {
+            responseType: 'blob'
+        });
+        return response.data;
+    },
+
     // Messages
     getInbox: async () => {
         const { data } = await apiClient.get('/messages/inbox');
@@ -124,6 +131,20 @@ const api = {
             params: { q: query }
         });
         return data;
+    },
+
+    exportChatJSON: async () => {
+        const response = await apiClient.get('/chat/export/json', {
+            responseType: 'blob'
+        });
+        return response.data;
+    },
+
+    exportChatCSV: async () => {
+        const response = await apiClient.get('/chat/export/csv', {
+            responseType: 'blob'
+        });
+        return response.data;
     },
 
     clearChatHistory: async () => {

@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { useDropzone } from 'react-dropzone';
 import toast from 'react-hot-toast';
 import api from '../services/api';
+import { downloadFile } from '../utils/download';
 
 export default function PersonaIngestion({ persona, onPersonaUpdate }) {
     const [uploads, setUploads] = useState([]);
@@ -53,14 +54,12 @@ export default function PersonaIngestion({ persona, onPersonaUpdate }) {
     });
 
     const handleRetrain = async () => {
-        if (!confirm('Retrain your persona? This may take a few minutes.')) return;
-
         setRetraining(true);
         try {
-            const toastId = toast.loading('Retraining persona...');
+            const toastId = toast.loading('Retraining your AI twin...');
             const result = await api.retrainPersona();
-            onPersonaUpdate(result.persona);
             toast.success('Persona retrained successfully!', { id: toastId });
+            onPersonaUpdate(result.persona);
         } catch (error) {
             console.error('Retrain error:', error);
             toast.error(`Retrain failed: ${error.response?.data?.error || error.message}`);
@@ -69,42 +68,53 @@ export default function PersonaIngestion({ persona, onPersonaUpdate }) {
         }
     };
 
-    return (
-        <div className="card">
-            <h2 className="text-xl font-bold mb-4 text-slate-800">Persona Ingestion</h2>
+    const handleExportPersona = async () => {
+        try {
+            const blob = await api.exportPersona();
+            const filename = `persona-data-${new Date().toISOString().split('T')[0]}.json`;
+            downloadFile(blob, filename);
+            toast.success('Persona data exported!');
+        } catch (error) {
+            toast.error('Export failed');
+        }
+    };
 
-            <div className="space-y-4">
-                {/* Drag & Drop Zone */}
+    return (
+        <div className="space-y-6">
+            {/* Upload Area */}
+            <div className="card">
+                <h3 className="text-xl font-bold text-slate-800 dark:text-slate-100 mb-4">Upload Training Samples</h3>
+
                 <div
                     {...getRootProps()}
-                    className={`border-2 border-dashed rounded-lg p-8 text-center cursor-pointer transition-all ${isDragActive
-                            ? 'border-indigo-500 bg-indigo-50 scale-105'
-                            : 'border-slate-300 hover:border-indigo-400 hover:bg-slate-50'
+                    className={`border-2 border-dashed rounded-lg p-8 text-center cursor-pointer transition-colors ${isDragActive
+                            ? 'border-indigo-500 bg-indigo-50 dark:bg-indigo-900/20'
+                            : 'border-slate-300 dark:border-slate-600 hover:border-indigo-400 dark:hover:border-indigo-500'
                         } ${uploading ? 'opacity-50 cursor-not-allowed' : ''}`}
                 >
                     <input {...getInputProps()} />
                     <div className="text-6xl mb-4">📁</div>
                     {isDragActive ? (
-                        <p className="text-indigo-600 font-medium text-lg">Drop files here...</p>
+                        <p className="text-lg font-medium text-indigo-600 dark:text-indigo-400">Drop the files here...</p>
                     ) : (
-                        <div>
-                            <p className="text-slate-700 font-medium mb-2 text-lg">
-                                Drag & drop files here, or click to browse
+                        <>
+                            <p className="text-lg font-medium text-slate-700 dark:text-slate-300 mb-2">
+                                Drag & drop files here, or click to select
                             </p>
-                            <p className="text-sm text-slate-500">
-                                Accepted: emails (.eml), documents (.txt, .docx, .pdf), audio (.mp3, .wav, .m4a)
+                            <p className="text-sm text-slate-500 dark:text-slate-400">
+                                Supported: .txt, .pdf, .docx, .mp3, .wav, .m4a, .eml
                             </p>
-                        </div>
+                        </>
                     )}
                 </div>
 
                 {uploading && (
-                    <div className="bg-indigo-50 rounded-lg p-3">
-                        <div className="flex justify-between text-sm mb-2">
-                            <span className="text-indigo-700 font-medium">Uploading...</span>
-                            <span className="text-indigo-600">{uploadProgress}%</span>
+                    <div className="mt-4">
+                        <div className="flex items-center justify-between mb-2">
+                            <span className="text-sm text-slate-600 dark:text-slate-400">Uploading...</span>
+                            <span className="text-sm font-medium text-indigo-600 dark:text-indigo-400">{uploadProgress}%</span>
                         </div>
-                        <div className="w-full bg-indigo-200 rounded-full h-2">
+                        <div className="w-full bg-slate-200 dark:bg-slate-700 rounded-full h-2">
                             <div
                                 className="bg-indigo-600 h-2 rounded-full transition-all duration-300"
                                 style={{ width: `${uploadProgress}%` }}
@@ -112,65 +122,66 @@ export default function PersonaIngestion({ persona, onPersonaUpdate }) {
                         </div>
                     </div>
                 )}
+            </div>
 
-                <div className="mt-4">
-                    <h3 className="font-semibold text-slate-800 mb-2">Uploaded Samples</h3>
-                    <div className="bg-slate-50 rounded-lg p-3 max-h-48 overflow-y-auto">
-                        {uploads.length === 0 && (
-                            <p className="text-sm text-slate-400">No files uploaded yet</p>
-                        )}
-                        <ul className="space-y-2">
-                            {uploads.map((upload, i) => (
-                                <li key={i} className="flex justify-between items-center text-sm">
-                                    <span className="text-slate-700 truncate">{upload.name}</span>
-                                    <span className="text-xs text-slate-400 ml-2">
-                                        {upload.size ? `${Math.round(upload.size / 1024)} KB` : ''}
-                                    </span>
-                                </li>
-                            ))}
-                        </ul>
+            {/* Persona Snapshot */}
+            {persona && (
+                <div className="card">
+                    <h3 className="text-xl font-bold text-slate-800 dark:text-slate-100 mb-4">Persona Snapshot</h3>
+                    <div className="space-y-3">
+                        <div className="flex justify-between">
+                            <span className="text-slate-600 dark:text-slate-400">Name:</span>
+                            <span className="font-medium text-slate-800 dark:text-slate-100">{persona.name || 'Your Persona'}</span>
+                        </div>
+                        <div className="flex justify-between">
+                            <span className="text-slate-600 dark:text-slate-400">Samples:</span>
+                            <span className="font-medium text-slate-800 dark:text-slate-100">{persona.sample_count || 0}</span>
+                        </div>
+                        <div className="flex justify-between">
+                            <span className="text-slate-600 dark:text-slate-400">Last Updated:</span>
+                            <span className="font-medium text-slate-800 dark:text-slate-100">
+                                {persona.updated_at ? new Date(persona.updated_at).toLocaleDateString() : 'Never'}
+                            </span>
+                        </div>
+                    </div>
+
+                    <div className="flex gap-3 mt-6">
+                        <button
+                            onClick={handleRetrain}
+                            disabled={retraining}
+                            className="flex-1 btn-primary disabled:opacity-50 disabled:cursor-not-allowed"
+                        >
+                            {retraining ? '⏳ Retraining...' : '🔄 Retrain Twin'}
+                        </button>
+                        <button
+                            onClick={handleExportPersona}
+                            className="flex-1 py-2 px-4 bg-slate-100 dark:bg-slate-700 text-slate-700 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-600 rounded-lg font-medium transition-colors"
+                        >
+                            📥 Export Data
+                        </button>
                     </div>
                 </div>
+            )}
 
-                <div className="mt-4 bg-gradient-to-br from-indigo-50 to-purple-50 rounded-lg p-4 border border-indigo-100">
-                    <h3 className="font-semibold text-slate-800 mb-3">Persona Snapshot</h3>
-                    {persona ? (
-                        <div className="space-y-2 text-sm">
-                            <div className="flex justify-between">
-                                <span className="text-slate-600">Tone:</span>
-                                <span className="font-semibold text-slate-800">
-                                    {persona.metadata?.tone || 'Direct, professional'}
-                                </span>
+            {/* Upload History */}
+            {uploads.length > 0 && (
+                <div className="card">
+                    <h3 className="text-xl font-bold text-slate-800 dark:text-slate-100 mb-4">Recent Uploads</h3>
+                    <div className="space-y-2">
+                        {uploads.slice(0, 5).map((upload, i) => (
+                            <div key={i} className="flex items-center justify-between p-3 bg-slate-50 dark:bg-slate-700 rounded-lg">
+                                <div>
+                                    <p className="font-medium text-slate-800 dark:text-slate-100">{upload.filename}</p>
+                                    <p className="text-xs text-slate-500 dark:text-slate-400">
+                                        {new Date(upload.created_at).toLocaleString()}
+                                    </p>
+                                </div>
+                                <span className="text-green-600 dark:text-green-400">✓</span>
                             </div>
-                            <div className="flex justify-between">
-                                <span className="text-slate-600">Risk Level:</span>
-                                <span className="font-semibold text-slate-800">
-                                    {persona.metadata?.riskLevel || 'Medium'}
-                                </span>
-                            </div>
-                            <div className="mt-2">
-                                <span className="text-slate-600">Common phrases:</span>
-                                <p className="text-slate-700 italic mt-1">
-                                    {persona.metadata?.commonPhrases?.join(', ') || '"Let\'s sync up", "Moving forward"'}
-                                </p>
-                            </div>
-                            <div className="mt-2 text-xs text-slate-500">
-                                Last trained: {persona.updatedAt ? new Date(persona.updatedAt).toLocaleDateString() : 'Never'}
-                            </div>
-                        </div>
-                    ) : (
-                        <p className="text-sm text-slate-500">Upload samples to create your persona</p>
-                    )}
+                        ))}
+                    </div>
                 </div>
-
-                <button
-                    onClick={handleRetrain}
-                    disabled={retraining || uploads.length === 0}
-                    className="w-full btn-primary disabled:opacity-50 disabled:cursor-not-allowed"
-                >
-                    {retraining ? 'Retraining...' : 'Retrain Twin'}
-                </button>
-            </div>
+            )}
         </div>
     );
 }
