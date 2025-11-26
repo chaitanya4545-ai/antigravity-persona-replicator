@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
+import MarkdownMessage from './MarkdownMessage';
 import api from '../services/api';
 
 export default function ChatInterface({ persona }) {
@@ -54,8 +55,6 @@ export default function ChatInterface({ persona }) {
             setMessages(prev => [...prev, {
                 role: 'assistant',
                 content: response.message,
-                confidence: response.confidence,
-                mode: chatMode,
                 timestamp: new Date()
             }]);
         } catch (error) {
@@ -77,104 +76,78 @@ export default function ChatInterface({ persona }) {
         }
     };
 
-    const clearHistory = async () => {
-        if (!confirm('Clear all chat history?')) return;
-
-        try {
-            await api.clearChatHistory();
-            setMessages([]);
-        } catch (error) {
-            console.error('Failed to clear history:', error);
-        }
-    };
-
     return (
-        <div className="card h-full flex flex-col">
-            <div className="flex items-center justify-between mb-4">
-                <div>
-                    <h2 className="text-xl font-bold text-slate-800">Chat Interface</h2>
-                    <p className="text-sm text-slate-600">
-                        {chatMode === 'twin' ? 'Chatting with your AI Twin' : 'AI Assistant Mode'}
-                    </p>
-                </div>
-                <div className="flex items-center gap-3">
-                    {/* Mode Toggle */}
-                    <div className="flex bg-slate-100 rounded-lg p-1">
-                        <button
-                            onClick={() => setChatMode('twin')}
-                            className={`px-4 py-2 rounded-md text-sm font-medium transition-all ${chatMode === 'twin'
-                                    ? 'bg-indigo-600 text-white shadow-sm'
-                                    : 'text-slate-600 hover:text-slate-800'
-                                }`}
-                        >
-                            👤 AI Twin
-                        </button>
-                        <button
-                            onClick={() => setChatMode('assistant')}
-                            className={`px-4 py-2 rounded-md text-sm font-medium transition-all ${chatMode === 'assistant'
-                                    ? 'bg-emerald-600 text-white shadow-sm'
-                                    : 'text-slate-600 hover:text-slate-800'
-                                }`}
-                        >
-                            🤖 AI Assistant
-                        </button>
-                    </div>
-
+        <div className="flex flex-col h-[600px] bg-white dark:bg-slate-800 rounded-xl shadow-lg">
+            {/* Mode Toggle */}
+            <div className="p-4 border-b border-slate-200 dark:border-slate-700">
+                <div className="flex gap-2">
                     <button
-                        onClick={clearHistory}
-                        className="text-sm text-slate-500 hover:text-slate-700"
+                        onClick={() => setChatMode('twin')}
+                        className={`flex-1 py-2 px-4 rounded-lg font-medium transition-colors ${chatMode === 'twin'
+                                ? 'bg-indigo-600 text-white'
+                                : 'bg-slate-100 dark:bg-slate-700 text-slate-700 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-600'
+                            }`}
                     >
-                        Clear History
+                        👤 AI Twin {persona ? `(${persona.name || 'Your Persona'})` : ''}
+                    </button>
+                    <button
+                        onClick={() => setChatMode('assistant')}
+                        className={`flex-1 py-2 px-4 rounded-lg font-medium transition-colors ${chatMode === 'assistant'
+                                ? 'bg-purple-600 text-white'
+                                : 'bg-slate-100 dark:bg-slate-700 text-slate-700 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-600'
+                            }`}
+                    >
+                        🤖 AI Assistant
                     </button>
                 </div>
+                <p className="text-xs text-slate-500 dark:text-slate-400 mt-2">
+                    {chatMode === 'twin'
+                        ? 'Chat with your AI twin - trained on your writing style'
+                        : 'Chat with a general AI assistant - like ChatGPT'}
+                </p>
             </div>
 
             {/* Messages */}
-            <div className="flex-1 overflow-y-auto mb-4 space-y-4 min-h-[400px] max-h-[600px]">
-                {messages.length === 0 ? (
-                    <div className="text-center py-12 text-slate-400">
-                        <p>Start a conversation!</p>
+            <div className="flex-1 overflow-y-auto p-4 space-y-4">
+                {messages.length === 0 && (
+                    <div className="text-center text-slate-400 dark:text-slate-500 mt-8">
+                        <div className="text-6xl mb-4">💬</div>
+                        <p className="text-lg font-medium">Start a conversation</p>
                         <p className="text-sm mt-2">
                             {chatMode === 'twin'
-                                ? 'Test how your AI twin would respond'
-                                : 'Ask me anything like ChatGPT'}
+                                ? 'Your AI twin will respond in your style'
+                                : 'Ask anything - I\'m here to help!'}
                         </p>
                     </div>
-                ) : (
-                    messages.map((msg, i) => (
+                )}
+
+                {messages.map((msg, i) => (
+                    <div
+                        key={i}
+                        className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}
+                    >
                         <div
-                            key={i}
-                            className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}
+                            className={`max-w-[80%] rounded-lg px-4 py-3 ${msg.role === 'user'
+                                    ? 'bg-indigo-600 text-white'
+                                    : 'bg-slate-100 dark:bg-slate-700 text-slate-800 dark:text-slate-100'
+                                }`}
                         >
-                            <div
-                                className={`max-w-[80%] rounded-lg px-4 py-3 ${msg.role === 'user'
-                                        ? 'bg-indigo-600 text-white'
-                                        : msg.mode === 'assistant'
-                                            ? 'bg-emerald-100 text-slate-800 border border-emerald-200'
-                                            : 'bg-slate-100 text-slate-800'
-                                    }`}
-                            >
-                                {msg.role === 'assistant' && msg.mode && (
-                                    <div className="text-xs mb-1 opacity-70">
-                                        {msg.mode === 'twin' ? '👤 AI Twin' : '🤖 AI Assistant'}
-                                    </div>
-                                )}
+                            {msg.role === 'assistant' ? (
+                                <MarkdownMessage content={msg.content} />
+                            ) : (
                                 <p className="whitespace-pre-wrap">{msg.content}</p>
-                                {msg.confidence && (
-                                    <p className="text-xs mt-2 opacity-70">
-                                        Confidence: {msg.confidence}%
-                                    </p>
-                                )}
-                                <p className="text-xs mt-1 opacity-60">
-                                    {new Date(msg.timestamp).toLocaleTimeString()}
-                                </p>
+                            )}
+                            <div className={`text-xs mt-2 ${msg.role === 'user' ? 'text-indigo-200' : 'text-slate-500 dark:text-slate-400'
+                                }`}>
+                                {msg.timestamp && new Date(msg.timestamp).toLocaleTimeString()}
                             </div>
                         </div>
-                    ))
-                )}
+                    </div>
+                ))}
+
                 {loading && (
                     <div className="flex justify-start">
-                        <div className="bg-slate-100 rounded-lg px-4 py-3">
+                        <div className="bg-slate-100 dark:bg-slate-700 rounded-lg px-4 py-3">
                             <div className="flex space-x-2">
                                 <div className="w-2 h-2 bg-slate-400 rounded-full animate-bounce"></div>
                                 <div className="w-2 h-2 bg-slate-400 rounded-full animate-bounce" style={{ animationDelay: '0.1s' }}></div>
@@ -183,27 +156,33 @@ export default function ChatInterface({ persona }) {
                         </div>
                     </div>
                 )}
+
                 <div ref={messagesEndRef} />
             </div>
 
             {/* Input */}
-            <div className="flex gap-2">
-                <textarea
-                    value={input}
-                    onChange={(e) => setInput(e.target.value)}
-                    onKeyPress={handleKeyPress}
-                    placeholder={chatMode === 'twin' ? 'Ask your AI twin...' : 'Ask me anything...'}
-                    className="flex-1 px-4 py-3 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 resize-none"
-                    rows="2"
-                    disabled={loading}
-                />
-                <button
-                    onClick={handleSend}
-                    disabled={!input.trim() || loading}
-                    className="px-6 py-3 bg-indigo-600 text-white rounded-lg font-medium hover:bg-indigo-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-                >
-                    Send
-                </button>
+            <div className="p-4 border-t border-slate-200 dark:border-slate-700">
+                <div className="flex gap-2">
+                    <textarea
+                        value={input}
+                        onChange={(e) => setInput(e.target.value)}
+                        onKeyPress={handleKeyPress}
+                        placeholder={chatMode === 'twin' ? 'Message your AI twin...' : 'Ask me anything...'}
+                        className="flex-1 px-4 py-3 border border-slate-300 dark:border-slate-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 dark:bg-slate-700 dark:text-white resize-none"
+                        rows="2"
+                        disabled={loading}
+                    />
+                    <button
+                        onClick={handleSend}
+                        disabled={loading || !input.trim()}
+                        className="px-6 py-3 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors font-medium"
+                    >
+                        Send
+                    </button>
+                </div>
+                <p className="text-xs text-slate-500 dark:text-slate-400 mt-2">
+                    Press Enter to send, Shift+Enter for new line
+                </p>
             </div>
         </div>
     );
