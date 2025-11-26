@@ -108,6 +108,36 @@ const api = {
         return response.data;
     },
 
+    // Threads
+    getThreads: async () => {
+        const { data } = await apiClient.get('/threads');
+        return data;
+    },
+
+    createThread: async (title, description, personaId) => {
+        const { data } = await apiClient.post('/threads', {
+            title,
+            description,
+            persona_id: personaId
+        });
+        return data;
+    },
+
+    updateThread: async (threadId, updates) => {
+        const { data } = await apiClient.put(`/threads/${threadId}`, updates);
+        return data;
+    },
+
+    deleteThread: async (threadId) => {
+        const { data } = await apiClient.delete(`/threads/${threadId}`);
+        return data;
+    },
+
+    getThreadMessages: async (threadId) => {
+        const { data } = await apiClient.get(`/threads/${threadId}/messages`);
+        return data;
+    },
+
     // Messages
     getInbox: async () => {
         const { data } = await apiClient.get('/messages/inbox');

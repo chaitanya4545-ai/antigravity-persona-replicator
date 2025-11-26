@@ -6,6 +6,7 @@ import personaRoutes from './routes/personas.js';
 import messageRoutes from './routes/messages.js';
 import activityRoutes from './routes/activity.js';
 import chatRoutes from './routes/chat.js';
+import threadRoutes from './routes/threads.js';
 import logger from './utils/logger.js';
 import { apiLimiter } from './middleware/rateLimiter.js';
 
@@ -41,6 +42,7 @@ app.use('/api/messages', messageRoutes);
 app.use('/api/activity', activityRoutes);
 app.use('/api/metrics', activityRoutes);
 app.use('/api/chat', chatRoutes);
+app.use('/api/threads', threadRoutes);
 
 // Health check
 app.get('/health', (req, res) => {

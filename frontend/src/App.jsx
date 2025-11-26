@@ -8,6 +8,7 @@ import ShortcutsHelp from './components/ShortcutsHelp';
 import OnboardingTour from './components/OnboardingTour';
 import PersonaSelector from './components/PersonaSelector';
 import PersonaManagement from './components/PersonaManagement';
+import ThreadList from './components/ThreadList';
 import { useDarkMode } from './hooks/useDarkMode';
 import { useKeyboardShortcuts } from './hooks/useKeyboardShortcuts';
 import { useOnboarding } from './hooks/useOnboarding';
@@ -16,6 +17,7 @@ import api from './services/api';
 export default function App() {
     const [user, setUser] = useState(null);
     const [persona, setPersona] = useState(null);
+    const [activeThread, setActiveThread] = useState(null);
     const [loading, setLoading] = useState(true);
     const [activeView, setActiveView] = useState('chat');
     const [showShortcuts, setShowShortcuts] = useState(false);
@@ -116,94 +118,74 @@ export default function App() {
                 {/* Logo */}
                 <div className="mb-6">
                     <h1 className="text-2xl font-bold bg-gradient-to-r from-indigo-400 to-purple-400 bg-clip-text text-transparent">
-                        Antigravity
-                    </h1>
-                    <p className="text-xs text-slate-400 mt-1">Persona Replicator</p>
-                </div>
-
-                {/* Persona Selector */}
-                <div className="mb-6" data-tour="persona-selector">
-                    <PersonaSelector
-                        activePersona={persona}
-                        onPersonaChange={handlePersonaChange}
-                    />
-                </div>
-
-                {/* Navigation */}
-                <nav className="flex-1 space-y-2">
-                    <NavItem
-                        data-tour="chat"
-                        icon="💬"
-                        label="Chat with Twin"
-                        active={activeView === 'chat'}
                         onClick={() => setActiveView('chat')}
                     />
-                    <NavItem
-                        data-tour="train"
-                        icon="🎓"
-                        label="Train Persona"
-                        active={activeView === 'train'}
-                        onClick={() => setActiveView('train')}
-                    />
-                    <NavItem
-                        data-tour="personas"
-                        icon="👥"
-                        label="Manage Personas"
-                        active={activeView === 'personas'}
-                        onClick={() => setActiveView('personas')}
-                    />
-                    <NavItem
-                        data-tour="inbox"
-                        icon="📧"
-                        label="Inbox Manager"
-                        active={activeView === 'inbox'}
-                        onClick={() => setActiveView('inbox')}
-                    />
-                    <NavItem
-                        data-tour="activity"
-                        icon="📊"
-                        label="Activity"
-                        active={activeView === 'activity'}
-                        onClick={() => setActiveView('activity')}
-                    />
-                </nav>
+                        <NavItem
+                            data-tour="train"
+                            icon="🎓"
+                            label="Train Persona"
+                            active={activeView === 'train'}
+                            onClick={() => setActiveView('train')}
+                        />
+                        <NavItem
+                            data-tour="personas"
+                            icon="👥"
+                            label="Manage Personas"
+                            active={activeView === 'personas'}
+                            onClick={() => setActiveView('personas')}
+                        />
+                        <NavItem
+                            data-tour="inbox"
+                            icon="📧"
+                            label="Inbox Manager"
+                            active={activeView === 'inbox'}
+                            onClick={() => setActiveView('inbox')}
+                        />
+                        <NavItem
+                            data-tour="activity"
+                            icon="📊"
+                            label="Activity"
+                            active={activeView === 'activity'}
+                            onClick={() => setActiveView('activity')}
+                        />
+                    </nav>
 
-                {/* Settings */}
-                <div className="border-t border-slate-800 pt-4 space-y-2">
-                    <button
-                        onClick={toggleDarkMode}
-                        className="w-full flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-slate-800 transition-colors text-left"
-                    >
-                        <span>{isDark ? '☀️' : '🌙'}</span>
-                        <span className="text-sm">{isDark ? 'Light Mode' : 'Dark Mode'}</span>
-                    </button>
-                    <button
-                        onClick={() => setShowShortcuts(true)}
-                        className="w-full flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-slate-800 transition-colors text-left"
-                    >
-                        <span>⌨️</span>
-                        <span className="text-sm">Shortcuts</span>
-                    </button>
-                    <button
-                        onClick={restartTour}
-                        className="w-full flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-slate-800 transition-colors text-left"
-                    >
-                        <span>🎯</span>
-                        <span className="text-sm">Restart Tour</span>
-                    </button>
-                    <button
-                        onClick={handleLogout}
-                        className="w-full flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-slate-800 transition-colors text-left text-red-400"
-                    >
-                        <span>🚪</span>
-                        <span className="text-sm">Logout</span>
-                    </button>
-                </div>
+                    {/* Settings */}
+                    <div className="border-t border-slate-800 pt-4 space-y-2">
+                        <button
+                            onClick={toggleDarkMode}
+                            className="w-full flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-slate-800 transition-colors text-left"
+                        >
+                            <span>{isDark ? '☀️' : '🌙'}</span>
+                            <span className="text-sm">{isDark ? 'Light Mode' : 'Dark Mode'}</span>
+                        </button>
+                        <button
+                            onClick={() => setShowShortcuts(true)}
+                            className="w-full flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-slate-800 transition-colors text-left"
+                        >
+                            <span>⌨️</span>
+                            <span className="text-sm">Shortcuts</span>
+                        </button>
+                        <button
+                            onClick={restartTour}
+                            className="w-full flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-slate-800 transition-colors text-left"
+                        >
+                            <span>🎯</span>
+                            <span className="text-sm">Restart Tour</span>
+                        </button>
+                        <button
+                            onClick={handleLogout}
+                            className="w-full flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-slate-800 transition-colors text-left text-red-400"
+                        >
+                            <span>🚪</span>
+                            <span className="text-sm">Logout</span>
+                        </button>
+                    </div>
 
-                {/* User Info */}
-                <div className="mt-4 pt-4 border-t border-slate-800">
-                    <p className="text-sm text-slate-400 truncate">{user.email}</p>
-                </div>
+                    {/* User Info */}
+                    <div className="mt-4 pt-4 border-t border-slate-800">
+                        <p className="text-sm text-slate-400 truncate">{user.email}</p>
+                    </div>
             </aside>
 
             {/* Main Content */}
@@ -263,8 +245,8 @@ function NavItem({ icon, label, active, onClick, ...props }) {
         <button
             onClick={onClick}
             className={`w-full flex items-center gap-3 px-3 py-2 rounded-lg transition-colors text-left ${active
-                    ? 'bg-indigo-600 text-white'
-                    : 'text-slate-300 hover:bg-slate-800'
+                ? 'bg-indigo-600 text-white'
+                : 'text-slate-300 hover:bg-slate-800'
                 }`}
             {...props}
         >
