@@ -9,6 +9,7 @@ import OnboardingTour from './components/OnboardingTour';
 import PersonaSelector from './components/PersonaSelector';
 import PersonaManagement from './components/PersonaManagement';
 import ThreadList from './components/ThreadList';
+import AnalyticsDashboard from './components/AnalyticsDashboard';
 import { useDarkMode } from './hooks/useDarkMode';
 import { useKeyboardShortcuts } from './hooks/useKeyboardShortcuts';
 import { useOnboarding } from './hooks/useOnboarding';
@@ -178,6 +179,13 @@ export default function App() {
                         active={activeView === 'activity'}
                         onClick={() => setActiveView('activity')}
                     />
+                    <NavItem
+                        data-tour="analytics"
+                        icon="📈"
+                        label="Analytics"
+                        active={activeView === 'analytics'}
+                        onClick={() => setActiveView('analytics')}
+                    />
                 </nav>
 
                 {/* Settings */}
@@ -230,6 +238,7 @@ export default function App() {
                     )}
                     {activeView === 'inbox' && <InboxManager />}
                     {activeView === 'activity' && <ActivityPanel />}
+                    {activeView === 'analytics' && <AnalyticsDashboard />}
                 </div>
             </main>
 
@@ -275,8 +284,8 @@ function NavItem({ icon, label, active, onClick, ...props }) {
         <button
             onClick={onClick}
             className={`w-full flex items-center gap-3 px-3 py-2 rounded-lg transition-colors text-left ${active
-                    ? 'bg-indigo-600 text-white'
-                    : 'text-slate-300 hover:bg-slate-800'
+                ? 'bg-indigo-600 text-white'
+                : 'text-slate-300 hover:bg-slate-800'
                 }`}
             {...props}
         >

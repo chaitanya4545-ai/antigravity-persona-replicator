@@ -169,6 +169,29 @@ const api = {
         return data;
     },
 
+    // Analytics
+    getOverviewMetrics: async () => {
+        const { data } = await apiClient.get('/metrics/overview');
+        return data;
+    },
+
+    getMessagesOverTime: async (days = 7) => {
+        const { data } = await apiClient.get('/metrics/messages-over-time', {
+            params: { days }
+        });
+        return data;
+    },
+
+    getPersonaUsage: async () => {
+        const { data } = await apiClient.get('/metrics/persona-usage');
+        return data;
+    },
+
+    getThreadActivity: async () => {
+        const { data } = await apiClient.get('/metrics/thread-activity');
+        return data;
+    },
+
     // Chat
     sendChatMessage: async (message) => {
         const { data } = await apiClient.post('/chat/message', { message });
