@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { useDropzone } from 'react-dropzone';
 import toast from 'react-hot-toast';
 import api from '../services/api';
 
@@ -8,10 +9,9 @@ export default function PersonaIngestion({ persona, onPersonaUpdate }) {
     const [uploadProgress, setUploadProgress] = useState(0);
     const [retraining, setRetraining] = useState(false);
 
-    const handleFileChange = async (e) => {
-        const files = Array.from(e.target.files);
-        if (files.length === 0) {
-            toast.error('Please select files to upload');
+    const handleFileDrop = async (acceptedFiles) => {
+        if (acceptedFiles.length === 0) {
+            toast.error('Please select valid files');
             return;
         }
 
@@ -20,10 +20,10 @@ export default function PersonaIngestion({ persona, onPersonaUpdate }) {
 
         try {
             const toastId = toast.loading('Uploading files...');
-            const result = await api.uploadSamples(files, setUploadProgress);
+            const result = await api.uploadSamples(acceptedFiles, setUploadProgress);
             setUploads((prev) => [...result.samples, ...prev]);
 
-            toast.success(`Successfully uploaded ${files.length} file(s)!`, { id: toastId });
+            toast.success(`Successfully uploaded ${acceptedFiles.length} file(s)!`, { id: toastId });
 
             // Refresh persona data
             const updatedPersona = await api.getPersona();
@@ -36,6 +36,21 @@ export default function PersonaIngestion({ persona, onPersonaUpdate }) {
             setUploadProgress(0);
         }
     };
+
+    const { getRootProps, getInputProps, isDragActive } = useDropzone({
+        onDrop: handleFileDrop,
+        accept: {
+            'text/plain': ['.txt'],
+            'application/pdf': ['.pdf'],
+            'application/vnd.openxmlformats-officedocument.wordprocessingml.document': ['.docx'],
+            'audio/mpeg': ['.mp3'],
+            'audio/wav': ['.wav'],
+            'audio/x-m4a': ['.m4a'],
+            'message/rfc822': ['.eml']
+        },
+        multiple: true,
+        disabled: uploading
+    });
 
     const handleRetrain = async () => {
         if (!confirm('Retrain your persona? This may take a few minutes.')) return;
@@ -59,27 +74,28 @@ export default function PersonaIngestion({ persona, onPersonaUpdate }) {
             <h2 className="text-xl font-bold mb-4 text-slate-800">Persona Ingestion</h2>
 
             <div className="space-y-4">
-                <div>
-                    <label className="block text-sm font-medium text-slate-700 mb-2">
-                        Upload writing & voice samples
-                    </label>
-                    <input
-                        type="file"
-                        multiple
-                        onChange={handleFileChange}
-                        disabled={uploading}
-                        accept=".txt,.docx,.pdf,.mp3,.wav,.m4a,.eml"
-                        className="block w-full text-sm text-slate-500
-              file:mr-4 file:py-2 file:px-4
-              file:rounded-lg file:border-0
-              file:text-sm file:font-semibold
-              file:bg-indigo-50 file:text-indigo-700
-              hover:file:bg-indigo-100
-              disabled:opacity-50"
-                    />
-                    <p className="mt-2 text-xs text-slate-500">
-                        Accepted: emails (.eml), documents (.txt, .docx, .pdf), audio (.mp3, .wav, .m4a)
-                    </p>
+                {/* Drag & Drop Zone */}
+                <div
+                    {...getRootProps()}
+                    className={`border-2 border-dashed rounded-lg p-8 text-center cursor-pointer transition-all ${isDragActive
+                            ? 'border-indigo-500 bg-indigo-50 scale-105'
+                            : 'border-slate-300 hover:border-indigo-400 hover:bg-slate-50'
+                        } ${uploading ? 'opacity-50 cursor-not-allowed' : ''}`}
+                >
+                    <input {...getInputProps()} />
+                    <div className="text-6xl mb-4">📁</div>
+                    {isDragActive ? (
+                        <p className="text-indigo-600 font-medium text-lg">Drop files here...</p>
+                    ) : (
+                        <div>
+                            <p className="text-slate-700 font-medium mb-2 text-lg">
+                                Drag & drop files here, or click to browse
+                            </p>
+                            <p className="text-sm text-slate-500">
+                                Accepted: emails (.eml), documents (.txt, .docx, .pdf), audio (.mp3, .wav, .m4a)
+                            </p>
+                        </div>
+                    )}
                 </div>
 
                 {uploading && (
