@@ -6,15 +6,6 @@
     "scripts": {
         "start": "node server.js",
         "dev": "node --watch server.js",
-```json
-{
-    "name": "antigravity-persona-replicator-backend",
-    "version": "1.0.0",
-    "type": "module",
-    "main": "server.js",
-    "scripts": {
-        "start": "node server.js",
-        "dev": "node --watch server.js",
         "migrate": "node db/migrations.js",
         "seed": "node db/seed.js"
     },
@@ -35,4 +26,3 @@
         "nodemon": "^3.0.2"
     }
 }
-```
