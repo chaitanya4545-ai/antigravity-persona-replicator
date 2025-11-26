@@ -5,6 +5,7 @@ export default function ChatInterface({ persona }) {
     const [messages, setMessages] = useState([]);
     const [input, setInput] = useState('');
     const [loading, setLoading] = useState(false);
+    const [chatMode, setChatMode] = useState('twin'); // 'twin' or 'assistant'
     const messagesEndRef = useRef(null);
 
     useEffect(() => {
@@ -39,13 +40,22 @@ export default function ChatInterface({ persona }) {
 
         setLoading(true);
         try {
-            const response = await api.sendChatMessage(userMessage);
+            let response;
+
+            if (chatMode === 'twin') {
+                // Use persona-based response
+                response = await api.sendChatMessage(userMessage);
+            } else {
+                // Use general AI assistant (ChatGPT-like)
+                response = await api.sendAssistantMessage(userMessage);
+            }
 
             // Add AI response
             setMessages(prev => [...prev, {
                 role: 'assistant',
                 content: response.message,
                 confidence: response.confidence,
+                mode: chatMode,
                 timestamp: new Date()
             }]);
         } catch (error) {
@@ -78,38 +88,57 @@ export default function ChatInterface({ persona }) {
         }
     };
 
-    if (!persona) {
-        return (
-            <div className="card">
-                <div className="text-center py-12">
-                    <div className="text-6xl mb-4">💬</div>
-                    <h3 className="text-xl font-semibold text-slate-800 mb-2">Chat with Your AI Twin</h3>
-                    <p className="text-slate-600 mb-4">
-                        Upload training samples first to create your persona
-                    </p>
-                </div>
-            </div>
-        );
-    }
-
     return (
         <div className="card h-full flex flex-col">
             <div className="flex items-center justify-between mb-4">
-                <h2 className="text-xl font-bold text-slate-800">Chat with Your Twin</h2>
-                <button
-                    onClick={clearHistory}
-                    className="text-sm text-slate-500 hover:text-slate-700"
-                >
-                    Clear History
-                </button>
+                <div>
+                    <h2 className="text-xl font-bold text-slate-800">Chat Interface</h2>
+                    <p className="text-sm text-slate-600">
+                        {chatMode === 'twin' ? 'Chatting with your AI Twin' : 'AI Assistant Mode'}
+                    </p>
+                </div>
+                <div className="flex items-center gap-3">
+                    {/* Mode Toggle */}
+                    <div className="flex bg-slate-100 rounded-lg p-1">
+                        <button
+                            onClick={() => setChatMode('twin')}
+                            className={`px-4 py-2 rounded-md text-sm font-medium transition-all ${chatMode === 'twin'
+                                    ? 'bg-indigo-600 text-white shadow-sm'
+                                    : 'text-slate-600 hover:text-slate-800'
+                                }`}
+                        >
+                            👤 AI Twin
+                        </button>
+                        <button
+                            onClick={() => setChatMode('assistant')}
+                            className={`px-4 py-2 rounded-md text-sm font-medium transition-all ${chatMode === 'assistant'
+                                    ? 'bg-emerald-600 text-white shadow-sm'
+                                    : 'text-slate-600 hover:text-slate-800'
+                                }`}
+                        >
+                            🤖 AI Assistant
+                        </button>
+                    </div>
+
+                    <button
+                        onClick={clearHistory}
+                        className="text-sm text-slate-500 hover:text-slate-700"
+                    >
+                        Clear History
+                    </button>
+                </div>
             </div>
 
             {/* Messages */}
             <div className="flex-1 overflow-y-auto mb-4 space-y-4 min-h-[400px] max-h-[600px]">
                 {messages.length === 0 ? (
                     <div className="text-center py-12 text-slate-400">
-                        <p>Start a conversation with your AI twin!</p>
-                        <p className="text-sm mt-2">Try asking about your writing style or test how it responds</p>
+                        <p>Start a conversation!</p>
+                        <p className="text-sm mt-2">
+                            {chatMode === 'twin'
+                                ? 'Test how your AI twin would respond'
+                                : 'Ask me anything like ChatGPT'}
+                        </p>
                     </div>
                 ) : (
                     messages.map((msg, i) => (
@@ -120,9 +149,16 @@ export default function ChatInterface({ persona }) {
                             <div
                                 className={`max-w-[80%] rounded-lg px-4 py-3 ${msg.role === 'user'
                                         ? 'bg-indigo-600 text-white'
-                                        : 'bg-slate-100 text-slate-800'
+                                        : msg.mode === 'assistant'
+                                            ? 'bg-emerald-100 text-slate-800 border border-emerald-200'
+                                            : 'bg-slate-100 text-slate-800'
                                     }`}
                             >
+                                {msg.role === 'assistant' && msg.mode && (
+                                    <div className="text-xs mb-1 opacity-70">
+                                        {msg.mode === 'twin' ? '👤 AI Twin' : '🤖 AI Assistant'}
+                                    </div>
+                                )}
                                 <p className="whitespace-pre-wrap">{msg.content}</p>
                                 {msg.confidence && (
                                     <p className="text-xs mt-2 opacity-70">
@@ -156,7 +192,7 @@ export default function ChatInterface({ persona }) {
                     value={input}
                     onChange={(e) => setInput(e.target.value)}
                     onKeyPress={handleKeyPress}
-                    placeholder="Type a message..."
+                    placeholder={chatMode === 'twin' ? 'Ask your AI twin...' : 'Ask me anything...'}
                     className="flex-1 px-4 py-3 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 resize-none"
                     rows="2"
                     disabled={loading}
