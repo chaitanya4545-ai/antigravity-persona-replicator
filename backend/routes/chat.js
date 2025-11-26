@@ -5,6 +5,15 @@ import { generateTwinReply } from '../services/personaEngine.js';
 
 const router = express.Router();
 
+// Test endpoint to verify chat routes are working
+router.get('/test', (req, res) => {
+    res.json({
+        status: 'Chat routes are working!',
+        timestamp: new Date().toISOString(),
+        openaiConfigured: !!process.env.OPENAI_API_KEY
+    });
+});
+
 // AI Assistant mode (ChatGPT-like, no persona) - NO DATABASE REQUIRED
 router.post('/assistant', authMiddleware, async (req, res) => {
     try {
