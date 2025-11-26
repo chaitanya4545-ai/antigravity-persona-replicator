@@ -5,8 +5,10 @@ import InboxManager from './components/InboxManager';
 import ActivityPanel from './components/ActivityPanel';
 import ChatInterface from './components/ChatInterface';
 import ShortcutsHelp from './components/ShortcutsHelp';
+import OnboardingTour from './components/OnboardingTour';
 import { useDarkMode } from './hooks/useDarkMode';
 import { useKeyboardShortcuts } from './hooks/useKeyboardShortcuts';
+import { useOnboarding } from './hooks/useOnboarding';
 import api from './services/api';
 
 export default function App() {
@@ -18,6 +20,9 @@ export default function App() {
 
     // Dark mode
     const { isDark, toggle: toggleDarkMode } = useDarkMode();
+
+    // Onboarding tour
+    const { run, stepIndex, handleJoyrideCallback, restartTour } = useOnboarding();
 
     // Keyboard shortcuts
     useKeyboardShortcuts({
@@ -112,12 +117,14 @@ export default function App() {
 
                     <nav className="flex-1 px-3">
                         <NavItem
+                            data-tour="chat"
                             icon="💬"
                             label="Chat with Twin"
                             active={activeView === 'chat'}
                             onClick={() => setActiveView('chat')}
                         />
                         <NavItem
+                            data-tour="persona"
                             icon="👤"
                             label="Train Persona"
                             active={activeView === 'persona'}
@@ -152,6 +159,7 @@ export default function App() {
                     <div className="p-4 border-t border-slate-700 dark:border-slate-800 space-y-3">
                         {/* Dark Mode Toggle */}
                         <button
+                            data-tour="dark-mode"
                             onClick={toggleDarkMode}
                             className="w-full px-4 py-2 bg-slate-800 dark:bg-slate-900 hover:bg-slate-700 dark:hover:bg-slate-800 rounded-lg transition-colors flex items-center justify-center gap-2"
                             title="Toggle dark mode (Ctrl+D)"
@@ -162,6 +170,7 @@ export default function App() {
 
                         {/* Keyboard Shortcuts Help */}
                         <button
+                            data-tour="shortcuts"
                             onClick={() => setShowShortcuts(true)}
                             className="w-full px-4 py-2 bg-slate-800 dark:bg-slate-900 hover:bg-slate-700 dark:hover:bg-slate-800 rounded-lg transition-colors flex items-center justify-center gap-2"
                             title="Show keyboard shortcuts (Ctrl+/)"
@@ -188,42 +197,42 @@ export default function App() {
                     <div className="max-w-6xl mx-auto p-8">
                         {activeView === 'chat' && (
                             <div>
-                                <h2 className="text-3xl font-bold text-slate-800 mb-6">Chat with Your AI Twin</h2>
+                                <h2 className="text-3xl font-bold text-slate-800 dark:text-slate-100 mb-6">Chat with Your AI Twin</h2>
                                 <ChatInterface persona={persona} />
                             </div>
                         )}
 
                         {activeView === 'persona' && (
                             <div>
-                                <h2 className="text-3xl font-bold text-slate-800 mb-6">Train Your Persona</h2>
+                                <h2 className="text-3xl font-bold text-slate-800 dark:text-slate-100 mb-6">Train Your Persona</h2>
                                 <PersonaIngestion persona={persona} onPersonaUpdate={setPersona} />
                             </div>
                         )}
 
                         {activeView === 'inbox' && (
                             <div>
-                                <h2 className="text-3xl font-bold text-slate-800 mb-6">Email Inbox</h2>
+                                <h2 className="text-3xl font-bold text-slate-800 dark:text-slate-100 mb-6">Email Inbox</h2>
                                 <InboxManager persona={persona} />
                             </div>
                         )}
 
                         {activeView === 'voice' && (
                             <div>
-                                <h2 className="text-3xl font-bold text-slate-800 mb-6">Voice Features</h2>
+                                <h2 className="text-3xl font-bold text-slate-800 dark:text-slate-100 mb-6">Voice Features</h2>
                                 <VoiceFeatures persona={persona} />
                             </div>
                         )}
 
                         {activeView === 'settings' && (
                             <div>
-                                <h2 className="text-3xl font-bold text-slate-800 mb-6">Settings</h2>
-                                <SettingsView />
+                                <h2 className="text-3xl font-bold text-slate-800 dark:text-slate-100 mb-6">Settings</h2>
+                                <SettingsView restartTour={restartTour} />
                             </div>
                         )}
 
                         {activeView === 'activity' && (
                             <div>
-                                <h2 className="text-3xl font-bold text-slate-800 mb-6">Activity & Metrics</h2>
+                                <h2 className="text-3xl font-bold text-slate-800 dark:text-slate-100 mb-6">Activity & Metrics</h2>
                                 <ActivityPanel />
                             </div>
                         )}
@@ -255,13 +264,20 @@ export default function App() {
                 }}
             />
 
+            {/* Onboarding Tour */}
+            <OnboardingTour
+                run={run}
+                stepIndex={stepIndex}
+                callback={handleJoyrideCallback}
+            />
+
             {/* Shortcuts Help Modal */}
             <ShortcutsHelp isOpen={showShortcuts} onClose={() => setShowShortcuts(false)} />
         </>
     );
 }
 
-function NavItem({ icon, label, active, onClick }) {
+function NavItem({ icon, label, active, onClick, ...props }) {
     return (
         <button
             onClick={onClick}
@@ -269,6 +285,7 @@ function NavItem({ icon, label, active, onClick }) {
                 ? 'bg-indigo-600 text-white shadow-lg'
                 : 'text-slate-300 hover:bg-white/10 hover:text-white'
                 }`}
+            {...props}
         >
             <span className="text-xl">{icon}</span>
             <span className="font-medium">{label}</span>
@@ -349,8 +366,8 @@ function VoiceFeatures({ persona }) {
         return (
             <div className="card text-center py-12">
                 <div className="text-6xl mb-4">🎤</div>
-                <h3 className="text-xl font-semibold text-slate-800 mb-2">Voice Features</h3>
-                <p className="text-slate-600">Upload training samples first to create your persona</p>
+                <h3 className="text-xl font-semibold text-slate-800 dark:text-slate-100 mb-2">Voice Features</h3>
+                <p className="text-slate-600 dark:text-slate-400">Upload training samples first to create your persona</p>
             </div>
         );
     }
@@ -358,7 +375,7 @@ function VoiceFeatures({ persona }) {
     return (
         <div className="space-y-6">
             <div className="card">
-                <h3 className="text-xl font-bold text-slate-800 mb-4">Voice-to-Text & AI Response</h3>
+                <h3 className="text-xl font-bold text-slate-800 dark:text-slate-100 mb-4">Voice-to-Text & AI Response</h3>
 
                 <div className="text-center mb-6">
                     <button
@@ -370,22 +387,22 @@ function VoiceFeatures({ persona }) {
                     >
                         {isRecording ? '⏹️' : '🎤'}
                     </button>
-                    <p className="mt-4 text-sm text-slate-600">
+                    <p className="mt-4 text-sm text-slate-600 dark:text-slate-400">
                         {isRecording ? 'Recording... Click to stop' : 'Click to start recording'}
                     </p>
                 </div>
 
                 {transcript && (
-                    <div className="bg-slate-100 rounded-lg p-4 mb-4">
-                        <p className="text-sm text-slate-600 mb-1">You said:</p>
-                        <p className="text-slate-800">{transcript}</p>
+                    <div className="bg-slate-100 dark:bg-slate-700 rounded-lg p-4 mb-4">
+                        <p className="text-sm text-slate-600 dark:text-slate-400 mb-1">You said:</p>
+                        <p className="text-slate-800 dark:text-slate-100">{transcript}</p>
                     </div>
                 )}
 
                 {aiResponse && (
-                    <div className="bg-indigo-50 rounded-lg p-4">
+                    <div className="bg-indigo-50 dark:bg-indigo-900/30 rounded-lg p-4">
                         <div className="flex items-center justify-between mb-2">
-                            <p className="text-sm text-indigo-600">AI Twin responded:</p>
+                            <p className="text-sm text-indigo-600 dark:text-indigo-400">AI Twin responded:</p>
                             <button
                                 onClick={() => speakText(aiResponse)}
                                 className="text-sm px-3 py-1 bg-indigo-600 text-white rounded hover:bg-indigo-700"
@@ -393,16 +410,16 @@ function VoiceFeatures({ persona }) {
                                 🔊 Play
                             </button>
                         </div>
-                        <p className="text-slate-800">{aiResponse}</p>
+                        <p className="text-slate-800 dark:text-slate-100">{aiResponse}</p>
                     </div>
                 )}
             </div>
 
             <div className="card">
-                <h3 className="text-xl font-bold text-slate-800 mb-4">Text-to-Speech Test</h3>
+                <h3 className="text-xl font-bold text-slate-800 dark:text-slate-100 mb-4">Text-to-Speech Test</h3>
                 <textarea
                     placeholder="Type text to hear your AI twin speak..."
-                    className="w-full px-4 py-3 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 mb-4"
+                    className="w-full px-4 py-3 border border-slate-300 dark:border-slate-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 dark:bg-slate-700 dark:text-white mb-4"
                     rows="4"
                     id="tts-input"
                 />
@@ -420,18 +437,31 @@ function VoiceFeatures({ persona }) {
     );
 }
 
-function SettingsView() {
+function SettingsView({ restartTour }) {
     const [gmailConnected, setGmailConnected] = useState(false);
     const [autoReply, setAutoReply] = useState(false);
 
     return (
         <div className="space-y-6">
             <div className="card">
-                <h3 className="text-xl font-bold text-slate-800 mb-4">Gmail Integration</h3>
+                <h3 className="text-xl font-bold text-slate-800 dark:text-slate-100 mb-4">Onboarding Tour</h3>
+                <p className="text-slate-600 dark:text-slate-400 mb-4">
+                    Want to see the app tour again?
+                </p>
+                <button
+                    onClick={restartTour}
+                    className="btn-primary"
+                >
+                    🎯 Restart Tour
+                </button>
+            </div>
+
+            <div className="card">
+                <h3 className="text-xl font-bold text-slate-800 dark:text-slate-100 mb-4">Gmail Integration</h3>
 
                 {!gmailConnected ? (
                     <div>
-                        <p className="text-slate-600 mb-4">
+                        <p className="text-slate-600 dark:text-slate-400 mb-4">
                             Connect your Gmail account to automatically sync emails and enable auto-reply.
                         </p>
                         <button
@@ -440,26 +470,26 @@ function SettingsView() {
                         >
                             📧 Connect Gmail Account
                         </button>
-                        <p className="text-xs text-slate-500 mt-2">
+                        <p className="text-xs text-slate-500 dark:text-slate-400 mt-2">
                             Note: Requires Google Cloud OAuth setup
                         </p>
                     </div>
                 ) : (
                     <div>
-                        <div className="flex items-center justify-between mb-4 p-4 bg-green-50 rounded-lg">
+                        <div className="flex items-center justify-between mb-4 p-4 bg-green-50 dark:bg-green-900/30 rounded-lg">
                             <div>
-                                <p className="font-semibold text-green-800">✅ Gmail Connected</p>
-                                <p className="text-sm text-green-600">your.email@gmail.com</p>
+                                <p className="font-semibold text-green-800 dark:text-green-400">✅ Gmail Connected</p>
+                                <p className="text-sm text-green-600 dark:text-green-500">your.email@gmail.com</p>
                             </div>
-                            <button className="text-sm text-red-600 hover:text-red-700">
+                            <button className="text-sm text-red-600 hover:text-red-700 dark:text-red-400">
                                 Disconnect
                             </button>
                         </div>
 
-                        <div className="flex items-center justify-between p-4 bg-slate-50 rounded-lg">
+                        <div className="flex items-center justify-between p-4 bg-slate-50 dark:bg-slate-700 rounded-lg">
                             <div>
-                                <p className="font-semibold text-slate-800">Auto-Reply</p>
-                                <p className="text-sm text-slate-600">Automatically reply to emails using your AI twin</p>
+                                <p className="font-semibold text-slate-800 dark:text-slate-100">Auto-Reply</p>
+                                <p className="text-sm text-slate-600 dark:text-slate-400">Automatically reply to emails using your AI twin</p>
                             </div>
                             <label className="relative inline-flex items-center cursor-pointer">
                                 <input
