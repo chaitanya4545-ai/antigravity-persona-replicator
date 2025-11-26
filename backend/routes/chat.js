@@ -81,6 +81,38 @@ router.post('/message', authMiddleware, chatLimiter, validate(chatMessageSchema)
     }
 });
 
+// Search chat messages
+router.get('/search', authMiddleware, async (req, res) => {
+    try {
+        const { q } = req.query;
+
+        if (!q || q.trim().length === 0) {
+            return res.json({ results: [], count: 0 });
+        }
+
+        const searchQuery = `
+            SELECT id, role, content, created_at,
+                   ts_rank(to_tsvector('english', content), plainto_tsquery('english', $1)) as rank
+            FROM chat_messages
+            WHERE user_id = $2
+            AND to_tsvector('english', content) @@ plainto_tsquery('english', $1)
+            ORDER BY rank DESC, created_at DESC
+            LIMIT 50
+        `;
+
+        const result = await query(searchQuery, [q, req.userId]);
+
+        logger.info('Search completed', { userId: req.userId, query: q, resultsCount: result.rows.length });
+        res.json({
+            results: result.rows,
+            count: result.rows.length
+        });
+    } catch (error) {
+        logger.error('Search error', { error: error.message, userId: req.userId });
+        res.status(500).json({ error: 'Search failed' });
+    }
+});
+
 // Get history
 router.get('/history', authMiddleware, async (req, res) => {
     res.json([]);  // Return empty for now

@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import MarkdownMessage from './MarkdownMessage';
+import SearchBar from './SearchBar';
 import api from '../services/api';
 
 export default function ChatInterface({ persona }) {
@@ -9,13 +10,32 @@ export default function ChatInterface({ persona }) {
     const [chatMode, setChatMode] = useState('twin'); // 'twin' or 'assistant'
     const messagesEndRef = useRef(null);
 
+    // Search state
+    const [searchQuery, setSearchQuery] = useState('');
+    const [searchResults, setSearchResults] = useState([]);
+    const [searching, setSearching] = useState(false);
+
     useEffect(() => {
         loadHistory();
     }, []);
 
     useEffect(() => {
         scrollToBottom();
-    }, [messages]);
+    }, [messages, searchResults]);
+
+    // Keyboard shortcut for search (Ctrl+K)
+    useEffect(() => {
+        const handleKeyDown = (e) => {
+            if ((e.ctrlKey || e.metaKey) && e.key === 'k') {
+                e.preventDefault();
+                const searchInput = document.querySelector('[data-search-input]');
+                searchInput?.focus();
+            }
+        };
+
+        window.addEventListener('keydown', handleKeyDown);
+        return () => window.removeEventListener('keydown', handleKeyDown);
+    }, []);
 
     const loadHistory = async () => {
         try {
@@ -28,6 +48,37 @@ export default function ChatInterface({ persona }) {
 
     const scrollToBottom = () => {
         messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+    };
+
+    const handleSearch = async (query) => {
+        setSearching(true);
+        try {
+            const data = await api.searchMessages(query);
+            setSearchResults(data.results);
+            setSearchQuery(query);
+        } catch (error) {
+            console.error('Search error:', error);
+        } finally {
+            setSearching(false);
+        }
+    };
+
+    const handleClearSearch = () => {
+        setSearchQuery('');
+        setSearchResults([]);
+    };
+
+    const highlightText = (text, query) => {
+        if (!query) return text;
+
+        const parts = text.split(new RegExp(`(${query})`, 'gi'));
+        return parts.map((part, i) =>
+            part.toLowerCase() === query.toLowerCase() ? (
+                <mark key={i} className="bg-yellow-200 dark:bg-yellow-600">{part}</mark>
+            ) : (
+                part
+            )
+        );
     };
 
     const handleSend = async () => {
@@ -76,11 +127,13 @@ export default function ChatInterface({ persona }) {
         }
     };
 
+    const displayMessages = searchQuery ? searchResults : messages;
+
     return (
         <div className="flex flex-col h-[600px] bg-white dark:bg-slate-800 rounded-xl shadow-lg">
             {/* Mode Toggle */}
             <div className="p-4 border-b border-slate-200 dark:border-slate-700">
-                <div className="flex gap-2">
+                <div className="flex gap-2 mb-4">
                     <button
                         onClick={() => setChatMode('twin')}
                         className={`flex-1 py-2 px-4 rounded-lg font-medium transition-colors ${chatMode === 'twin'
@@ -100,16 +153,35 @@ export default function ChatInterface({ persona }) {
                         🤖 AI Assistant
                     </button>
                 </div>
-                <p className="text-xs text-slate-500 dark:text-slate-400 mt-2">
-                    {chatMode === 'twin'
-                        ? 'Chat with your AI twin - trained on your writing style'
-                        : 'Chat with a general AI assistant - like ChatGPT'}
-                </p>
+
+                {/* Search Bar */}
+                <SearchBar
+                    onSearch={handleSearch}
+                    onClear={handleClearSearch}
+                    resultsCount={searchQuery ? searchResults.length : null}
+                    loading={searching}
+                />
             </div>
 
             {/* Messages */}
             <div className="flex-1 overflow-y-auto p-4 space-y-4">
-                {messages.length === 0 && (
+                {searchQuery && (
+                    <div className="bg-indigo-50 dark:bg-indigo-900/30 rounded-lg p-3 mb-4">
+                        <div className="flex items-center justify-between">
+                            <p className="text-sm text-indigo-700 dark:text-indigo-300">
+                                Showing {searchResults.length} result{searchResults.length !== 1 ? 's' : ''} for "{searchQuery}"
+                            </p>
+                            <button
+                                onClick={handleClearSearch}
+                                className="text-sm text-indigo-600 dark:text-indigo-400 hover:underline"
+                            >
+                                Clear search
+                            </button>
+                        </div>
+                    </div>
+                )}
+
+                {displayMessages.length === 0 && !searchQuery && (
                     <div className="text-center text-slate-400 dark:text-slate-500 mt-8">
                         <div className="text-6xl mb-4">💬</div>
                         <p className="text-lg font-medium">Start a conversation</p>
@@ -121,7 +193,15 @@ export default function ChatInterface({ persona }) {
                     </div>
                 )}
 
-                {messages.map((msg, i) => (
+                {displayMessages.length === 0 && searchQuery && (
+                    <div className="text-center text-slate-400 dark:text-slate-500 mt-8">
+                        <div className="text-6xl mb-4">🔍</div>
+                        <p className="text-lg font-medium">No results found</p>
+                        <p className="text-sm mt-2">Try a different search term</p>
+                    </div>
+                )}
+
+                {displayMessages.map((msg, i) => (
                     <div
                         key={i}
                         className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}
@@ -133,13 +213,22 @@ export default function ChatInterface({ persona }) {
                                 }`}
                         >
                             {msg.role === 'assistant' ? (
-                                <MarkdownMessage content={msg.content} />
+                                searchQuery ? (
+                                    <div className="prose dark:prose-invert max-w-none">
+                                        {highlightText(msg.content, searchQuery)}
+                                    </div>
+                                ) : (
+                                    <MarkdownMessage content={msg.content} />
+                                )
                             ) : (
-                                <p className="whitespace-pre-wrap">{msg.content}</p>
+                                <p className="whitespace-pre-wrap">
+                                    {searchQuery ? highlightText(msg.content, searchQuery) : msg.content}
+                                </p>
                             )}
                             <div className={`text-xs mt-2 ${msg.role === 'user' ? 'text-indigo-200' : 'text-slate-500 dark:text-slate-400'
                                 }`}>
-                                {msg.timestamp && new Date(msg.timestamp).toLocaleTimeString()}
+                                {msg.created_at ? new Date(msg.created_at).toLocaleString() :
+                                    msg.timestamp ? new Date(msg.timestamp).toLocaleString() : ''}
                             </div>
                         </div>
                     </div>
@@ -181,7 +270,7 @@ export default function ChatInterface({ persona }) {
                     </button>
                 </div>
                 <p className="text-xs text-slate-500 dark:text-slate-400 mt-2">
-                    Press Enter to send, Shift+Enter for new line
+                    Press Enter to send, Shift+Enter for new line • Ctrl+K to search
                 </p>
             </div>
         </div>

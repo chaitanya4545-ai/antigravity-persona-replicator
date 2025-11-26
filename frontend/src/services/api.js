@@ -114,8 +114,15 @@ const api = {
         return data;
     },
 
-    getChatHistory: async (limit = 50) => {
-        const { data } = await apiClient.get(`/chat/history?limit=${limit}`);
+    getChatHistory: async () => {
+        const { data } = await apiClient.get('/chat/history');
+        return data;
+    },
+
+    searchMessages: async (query) => {
+        const { data } = await apiClient.get('/chat/search', {
+            params: { q: query }
+        });
         return data;
     },
 
