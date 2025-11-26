@@ -3,17 +3,17 @@ import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
 import { query } from '../db/connection.js';
 import authMiddleware from '../middleware/auth.js';
+import { validate } from '../middleware/validate.js';
+import { loginSchema, signupSchema } from '../validators/auth.js';
+import { authLimiter } from '../middleware/rateLimiter.js';
+import logger from '../utils/logger.js';
 
 const router = express.Router();
 
-// Signup
-router.post('/signup', async (req, res) => {
+// Signup - with validation and rate limiting
+router.post('/signup', authLimiter, validate(signupSchema), async (req, res) => {
     try {
         const { email, password, name } = req.body;
-
-        if (!email || !password) {
-            return res.status(400).json({ error: 'Email and password required' });
-        }
 
         // Check if user exists
         const existing = await query('SELECT id FROM users WHERE email = $1', [email]);
@@ -46,21 +46,18 @@ router.post('/signup', async (req, res) => {
             expiresIn: '30d',
         });
 
+        logger.info('User signed up', { userId: user.id, email: user.email });
         res.json({ user, token });
     } catch (error) {
-        console.error('Signup error:', error);
+        logger.error('Signup error', { error: error.message });
         res.status(500).json({ error: 'Signup failed' });
     }
 });
 
-// Login
-router.post('/login', async (req, res) => {
+// Login - with validation and rate limiting
+router.post('/login', authLimiter, validate(loginSchema), async (req, res) => {
     try {
         const { email, password } = req.body;
-
-        if (!email || !password) {
-            return res.status(400).json({ error: 'Email and password required' });
-        }
 
         // Find user
         const result = await query('SELECT * FROM users WHERE email = $1', [email]);
@@ -81,6 +78,7 @@ router.post('/login', async (req, res) => {
             expiresIn: '30d',
         });
 
+        logger.info('User logged in', { userId: user.id, email: user.email });
         res.json({
             user: {
                 id: user.id,
@@ -90,7 +88,7 @@ router.post('/login', async (req, res) => {
             token,
         });
     } catch (error) {
-        console.error('Login error:', error);
+        logger.error('Login error', { error: error.message });
         res.status(500).json({ error: 'Login failed' });
     }
 });
@@ -108,7 +106,7 @@ router.get('/me', authMiddleware, async (req, res) => {
 
         res.json(result.rows[0]);
     } catch (error) {
-        console.error('Get user error:', error);
+        logger.error('Get user error', { error: error.message });
         res.status(500).json({ error: 'Failed to get user' });
     }
 });

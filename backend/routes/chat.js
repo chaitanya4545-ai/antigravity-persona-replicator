@@ -2,6 +2,10 @@ import express from 'express';
 import { query } from '../db/connection.js';
 import authMiddleware from '../middleware/auth.js';
 import { generateTwinReply } from '../services/personaEngine.js';
+import { validate } from '../middleware/validate.js';
+import { chatMessageSchema } from '../validators/chat.js';
+import { chatLimiter } from '../middleware/rateLimiter.js';
+import logger from '../utils/logger.js';
 
 const router = express.Router();
 
@@ -15,12 +19,9 @@ router.get('/test', (req, res) => {
 });
 
 // AI Assistant mode - Google Gemini (FREE)
-router.post('/assistant', authMiddleware, async (req, res) => {
+router.post('/assistant', authMiddleware, chatLimiter, validate(chatMessageSchema), async (req, res) => {
     try {
         const { message } = req.body;
-        if (!message || !message.trim()) {
-            return res.status(400).json({ error: 'Message required' });
-        }
 
         // Use Google Gemini
         const { GoogleGenerativeAI } = await import('@google/generative-ai');
@@ -31,24 +32,22 @@ router.post('/assistant', authMiddleware, async (req, res) => {
         const response = await result.response;
         const responseText = response.text();
 
+        logger.info('AI Assistant response generated', { userId: req.userId, messageLength: message.length });
         res.json({
             message: responseText,
             confidence: null,
             rationale: 'Powered by Google Gemini',
         });
     } catch (error) {
-        console.error('Gemini error:', error);
+        logger.error('Gemini error', { error: error.message, userId: req.userId });
         res.status(500).json({ error: 'Failed: ' + error.message });
     }
 });
 
 // AI Twin mode
-router.post('/message', authMiddleware, async (req, res) => {
+router.post('/message', authMiddleware, chatLimiter, validate(chatMessageSchema), async (req, res) => {
     try {
         const { message } = req.body;
-        if (!message || !message.trim()) {
-            return res.status(400).json({ error: 'Message required' });
-        }
 
         const personaResult = await query(
             'SELECT * FROM personas WHERE user_id = $1 ORDER BY created_at DESC LIMIT 1',
@@ -70,13 +69,14 @@ router.post('/message', authMiddleware, async (req, res) => {
 
         const response = candidates.find(c => c.label === 'Normal') || candidates[0];
 
+        logger.info('AI Twin response generated', { userId: req.userId, personaId: persona.id });
         res.json({
             message: response.text,
             confidence: response.confidence,
             rationale: response.rationale,
         });
     } catch (error) {
-        console.error('Twin error:', error);
+        logger.error('Twin error', { error: error.message, userId: req.userId });
         res.status(500).json({ error: 'Failed: ' + error.message });
     }
 });

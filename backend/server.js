@@ -6,6 +6,8 @@ import personaRoutes from './routes/personas.js';
 import messageRoutes from './routes/messages.js';
 import activityRoutes from './routes/activity.js';
 import chatRoutes from './routes/chat.js';
+import logger from './utils/logger.js';
+import { apiLimiter } from './middleware/rateLimiter.js';
 
 dotenv.config();
 
@@ -20,9 +22,15 @@ app.use(cors({
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
+// Apply rate limiting to all API routes
+app.use('/api/', apiLimiter);
+
 // Request logging
 app.use((req, res, next) => {
-    console.log(`${new Date().toISOString()} - ${req.method} ${req.path}`);
+    logger.info(`${req.method} ${req.path}`, {
+        ip: req.ip,
+        userAgent: req.get('user-agent')
+    });
     next();
 });
 
@@ -41,7 +49,11 @@ app.get('/health', (req, res) => {
 
 // Error handling
 app.use((err, req, res, next) => {
-    console.error('Error:', err);
+    logger.error('Unhandled error', {
+        error: err.message,
+        stack: err.stack,
+        path: req.path
+    });
     res.status(err.status || 500).json({
         error: err.message || 'Internal server error',
     });
@@ -49,12 +61,13 @@ app.use((err, req, res, next) => {
 
 // 404 handler
 app.use((req, res) => {
+    logger.warn('Route not found', { path: req.path });
     res.status(404).json({ error: 'Route not found' });
 });
 
 app.listen(PORT, () => {
-    console.log(`🚀 Server running on port ${PORT}`);
-    console.log(`📡 API available at http://localhost:${PORT}/api`);
+    logger.info(`🚀 Server running on port ${PORT}`);
+    logger.info(`📡 API available at http://localhost:${PORT}/api`);
 });
 
 export default app;
