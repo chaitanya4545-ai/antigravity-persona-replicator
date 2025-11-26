@@ -5,6 +5,7 @@ import authRoutes from './routes/auth.js';
 import personaRoutes from './routes/personas.js';
 import messageRoutes from './routes/messages.js';
 import activityRoutes from './routes/activity.js';
+import chatRoutes from './routes/chat.js';
 
 dotenv.config();
 
@@ -31,6 +32,7 @@ app.use('/api/personas', personaRoutes);
 app.use('/api/messages', messageRoutes);
 app.use('/api/activity', activityRoutes);
 app.use('/api/metrics', activityRoutes);
+app.use('/api/chat', chatRoutes);
 
 // Health check
 app.get('/health', (req, res) => {

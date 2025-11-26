@@ -17,9 +17,16 @@ export default function PersonaIngestion({ persona, onPersonaUpdate }) {
         try {
             const result = await api.uploadSamples(files, setUploadProgress);
             setUploads((prev) => [...result.samples, ...prev]);
-            alert('Files uploaded successfully!');
+
+            // Show success message
+            showNotification('success', `Successfully uploaded ${files.length} file(s)!`);
+
+            // Refresh persona data
+            const updatedPersona = await api.getPersona();
+            onPersonaUpdate(updatedPersona);
         } catch (error) {
-            alert('Upload failed: ' + error.message);
+            console.error('Upload error:', error);
+            showNotification('error', 'Upload failed: ' + (error.response?.data?.error || error.message));
         } finally {
             setUploading(false);
             setUploadProgress(0);
@@ -33,12 +40,27 @@ export default function PersonaIngestion({ persona, onPersonaUpdate }) {
         try {
             const result = await api.retrainPersona();
             onPersonaUpdate(result.persona);
-            alert('Persona retrained successfully!');
+            showNotification('success', 'Persona retrained successfully! Your AI twin has learned from your samples.');
         } catch (error) {
-            alert('Retrain failed: ' + error.message);
+            console.error('Retrain error:', error);
+            showNotification('error', 'Retrain failed: ' + (error.response?.data?.error || error.message));
         } finally {
             setRetraining(false);
         }
+    };
+
+    const showNotification = (type, message) => {
+        // Create toast notification
+        const toast = document.createElement('div');
+        toast.className = `fixed top-4 right-4 px-6 py-4 rounded-lg shadow-lg text-white z-50 transition-all ${type === 'success' ? 'bg-emerald-600' : 'bg-red-600'
+            }`;
+        toast.textContent = message;
+        document.body.appendChild(toast);
+
+        setTimeout(() => {
+            toast.style.opacity = '0';
+            setTimeout(() => document.body.removeChild(toast), 300);
+        }, 3000);
     };
 
     return (

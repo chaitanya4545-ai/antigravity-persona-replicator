@@ -1,0 +1,51 @@
+{
+  "services": [
+    {
+      "type": "web",
+      "name": "antigravity-backend",
+      "env": "node",
+      "rootDir": "backend",
+      "buildCommand": "npm install",
+      "startCommand": "npm run migrate && npm start",
+      "envVars": [
+        {
+          "key": "NODE_ENV",
+          "value": "production"
+        },
+        {
+          "key": "JWT_SECRET",
+          "generateValue": true
+        },
+        {
+          "key": "OPENAI_API_KEY",
+          "sync": false
+        },
+        {
+          "key": "FRONTEND_URL",
+          "sync": false
+        }
+      ]
+    },
+    {
+      "type": "web",
+      "name": "antigravity-frontend",
+      "env": "static",
+      "rootDir": "frontend",
+      "buildCommand": "npm install && npm run build",
+      "staticPublishPath": "dist",
+      "envVars": [
+        {
+          "key": "VITE_API_URL",
+          "sync": false
+        }
+      ]
+    }
+  ],
+  "databases": [
+    {
+      "name": "antigravity-db",
+      "databaseName": "antigravity",
+      "user": "antigravity"
+    }
+  ]
+}

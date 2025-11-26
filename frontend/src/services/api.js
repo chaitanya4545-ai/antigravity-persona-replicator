@@ -102,6 +102,22 @@ const api = {
         const { data } = await apiClient.get('/metrics');
         return data;
     },
+
+    // Chat
+    sendChatMessage: async (message) => {
+        const { data } = await apiClient.post('/chat/message', { message });
+        return data;
+    },
+
+    getChatHistory: async (limit = 50) => {
+        const { data } = await apiClient.get(`/chat/history?limit=${limit}`);
+        return data;
+    },
+
+    clearChatHistory: async () => {
+        const { data } = await apiClient.delete('/chat/clear');
+        return data;
+    },
 };
 
 export default api;
