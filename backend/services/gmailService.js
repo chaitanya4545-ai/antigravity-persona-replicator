@@ -87,16 +87,20 @@ export function parseGmailMessage(gmailMessage) {
  * Create email reply in RFC 2822 format
  */
 export function createEmailReply(originalEmail, replyText, fromEmail) {
-    const subject = originalEmail.subject.startsWith('Re:')
+    const subject = originalEmail.subject && originalEmail.subject.startsWith('Re:')
         ? originalEmail.subject
-        : `Re: ${originalEmail.subject}`;
+        : `Re: ${originalEmail.subject || '(no subject)'}`;
+
+    // Extract just the email address from "Name <email@example.com>" format
+    const toEmail = originalEmail.from_email.includes('<')
+        ? originalEmail.from_email.match(/<(.+)>/)[1]
+        : originalEmail.from_email;
 
     const email = [
         `From: ${fromEmail}`,
-        `To: ${originalEmail.from_email}`,
+        `To: ${toEmail}`,
         `Subject: ${subject}`,
-        `In-Reply-To: ${originalEmail.message_id}`,
-        `References: ${originalEmail.message_id}`,
+        `Content-Type: text/plain; charset=UTF-8`,
         '',
         replyText
     ].join('\r\n');

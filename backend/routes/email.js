@@ -270,47 +270,52 @@ router.post('/generate-reply', authMiddleware, async (req, res) => {
 
         const email = emailResult.rows[0];
 
-        // Get active persona
-        const personaResult = await query(
-            'SELECT * FROM personas WHERE user_id = $1 AND is_active = true LIMIT 1',
-            [req.userId]
-        );
+        // Use Gemini directly for better email replies
+        const axios = (await import('axios')).default;
+        const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${process.env.GEMINI_API_KEY}`;
 
-        if (personaResult.rows.length === 0) {
-            return res.status(404).json({ error: 'No active persona found. Please activate a persona first.' });
-        }
+        const prompt = `You are a professional email assistant. Write a complete, detailed, and professional email reply to the following email.
 
-        const persona = personaResult.rows[0];
+FROM: ${email.from_name || email.from_email}
+SUBJECT: ${email.subject}
+EMAIL BODY:
+${email.body}
 
-        // Generate reply using AI Twin
-        const mockMessage = {
-            from_email: email.from_email,
-            subject: email.subject,
-            body: email.body
-        };
+Instructions:
+1. Write a COMPLETE email reply (not just a brief acknowledgment)
+2. Address all points mentioned in the original email
+3. Be professional, friendly, and helpful
+4. Provide specific information or answers where applicable
+5. Keep the tone conversational but professional
+6. Include a proper greeting and closing
+7. Make it ready to send without further editing
 
-        const candidates = await generateTwinReply(persona, mockMessage, {
-            mode: 'hybrid',
-            toneShift: 0,
-            riskTolerance: 50
+Write ONLY the email reply text (no subject line, no "From:", just the email body):`;
+
+        const response = await axios.post(apiUrl, {
+            contents: [{
+                parts: [{
+                    text: prompt
+                }]
+            }]
         });
 
-        const reply = candidates.find(c => c.label === 'Normal') || candidates[0];
+        const replyText = response.data.candidates[0].content.parts[0].text;
 
         // Store reply draft
         const replyResult = await query(`
             INSERT INTO email_replies (message_id, user_id, persona_id, reply_text, confidence, mode)
-            VALUES ($1, $2, $3, $4, $5, 'manual')
+            VALUES ($1, $2, NULL, $3, 85, 'manual')
             RETURNING id
-        `, [email.id, req.userId, persona.id, reply.text, reply.confidence]);
+        `, [email.id, req.userId, replyText]);
 
         logger.info('Generated email reply', { userId: req.userId, messageId });
         res.json({
             reply: {
                 id: replyResult.rows[0].id,
-                text: reply.text,
-                confidence: reply.confidence,
-                rationale: reply.rationale
+                text: replyText,
+                confidence: 85,
+                rationale: 'AI-generated professional email reply'
             }
         });
     } catch (error) {
