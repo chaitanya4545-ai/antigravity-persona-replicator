@@ -39,14 +39,19 @@ router.post('/assistant', authMiddleware, chatLimiter, validate(chatMessageSchem
             [req.userId, 'user', message]
         );
 
-        // Use Google Gemini with updated model name
-        const { GoogleGenerativeAI } = await import('@google/generative-ai');
-        const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
-        const model = genAI.getGenerativeModel({ model: 'gemini-pro' });
+        // Use Gemini REST API directly
+        const axios = (await import('axios')).default;
+        const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${process.env.GEMINI_API_KEY}`;
 
-        const result = await model.generateContent(message);
-        const response = await result.response;
-        const responseText = response.text();
+        const apiResponse = await axios.post(apiUrl, {
+            contents: [{
+                parts: [{
+                    text: message
+                }]
+            }]
+        });
+
+        const responseText = apiResponse.data.candidates[0].content.parts[0].text;
 
         // Save assistant response to database
         await query(
