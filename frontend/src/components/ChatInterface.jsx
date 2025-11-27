@@ -11,6 +11,8 @@ export default function ChatInterface({ persona }) {
     const [loading, setLoading] = useState(false);
     const [chatMode, setChatMode] = useState('twin'); // 'twin' or 'assistant'
     const messagesEndRef = useRef(null);
+    const messagesContainerRef = useRef(null);
+    const [shouldAutoScroll, setShouldAutoScroll] = useState(true);
 
     // Search state
     const [searchQuery, setSearchQuery] = useState('');
@@ -21,9 +23,27 @@ export default function ChatInterface({ persona }) {
         loadHistory();
     }, []);
 
+    // Only auto-scroll if user is near bottom
     useEffect(() => {
-        scrollToBottom();
-    }, [messages, searchResults]);
+        if (shouldAutoScroll) {
+            scrollToBottom();
+        }
+    }, [messages, searchResults, shouldAutoScroll]);
+
+    // Detect if user is scrolling manually
+    useEffect(() => {
+        const container = messagesContainerRef.current;
+        if (!container) return;
+
+        const handleScroll = () => {
+            const { scrollTop, scrollHeight, clientHeight } = container;
+            const isNearBottom = scrollHeight - scrollTop - clientHeight < 100;
+            setShouldAutoScroll(isNearBottom);
+        };
+
+        container.addEventListener('scroll', handleScroll);
+        return () => container.removeEventListener('scroll', handleScroll);
+    }, []);
 
     // Keyboard shortcut for search (Ctrl+K)
     useEffect(() => {
@@ -161,8 +181,8 @@ export default function ChatInterface({ persona }) {
                     <button
                         onClick={() => setChatMode('twin')}
                         className={`flex-1 py-2 px-4 rounded-lg font-medium transition-colors ${chatMode === 'twin'
-                                ? 'bg-indigo-600 text-white'
-                                : 'bg-slate-100 dark:bg-slate-700 text-slate-700 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-600'
+                            ? 'bg-indigo-600 text-white'
+                            : 'bg-slate-100 dark:bg-slate-700 text-slate-700 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-600'
                             }`}
                     >
                         👤 AI Twin {persona ? `(${persona.name || 'Your Persona'})` : ''}
@@ -170,8 +190,8 @@ export default function ChatInterface({ persona }) {
                     <button
                         onClick={() => setChatMode('assistant')}
                         className={`flex-1 py-2 px-4 rounded-lg font-medium transition-colors ${chatMode === 'assistant'
-                                ? 'bg-purple-600 text-white'
-                                : 'bg-slate-100 dark:bg-slate-700 text-slate-700 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-600'
+                            ? 'bg-purple-600 text-white'
+                            : 'bg-slate-100 dark:bg-slate-700 text-slate-700 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-600'
                             }`}
                     >
                         🤖 AI Assistant
@@ -204,7 +224,7 @@ export default function ChatInterface({ persona }) {
             </div>
 
             {/* Messages */}
-            <div className="flex-1 overflow-y-auto p-4 space-y-4">
+            <div ref={messagesContainerRef} className="flex-1 overflow-y-auto p-4 space-y-4">
                 {searchQuery && (
                     <div className="bg-indigo-50 dark:bg-indigo-900/30 rounded-lg p-3 mb-4">
                         <div className="flex items-center justify-between">
@@ -248,8 +268,8 @@ export default function ChatInterface({ persona }) {
                     >
                         <div
                             className={`max-w-[80%] rounded-lg px-4 py-3 ${msg.role === 'user'
-                                    ? 'bg-indigo-600 text-white'
-                                    : 'bg-slate-100 dark:bg-slate-700 text-slate-800 dark:text-slate-100'
+                                ? 'bg-indigo-600 text-white'
+                                : 'bg-slate-100 dark:bg-slate-700 text-slate-800 dark:text-slate-100'
                                 }`}
                         >
                             {msg.role === 'assistant' ? (
