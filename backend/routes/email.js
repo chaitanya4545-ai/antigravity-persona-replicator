@@ -11,6 +11,7 @@ import {
     shouldFilterEmail
 } from '../services/gmailService.js';
 import { generateTwinReply } from '../services/personaEngine.js';
+import { generateAITwinEmailReply } from '../services/emailReplyService.js';
 
 const router = express.Router();
 
@@ -270,52 +271,23 @@ router.post('/generate-reply', authMiddleware, async (req, res) => {
 
         const email = emailResult.rows[0];
 
-        // Use Gemini directly for better email replies
-        const axios = (await import('axios')).default;
-        const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${process.env.GEMINI_API_KEY}`;
-
-        const prompt = `You are a professional email assistant. Write a complete, detailed, and professional email reply to the following email.
-
-FROM: ${email.from_name || email.from_email}
-SUBJECT: ${email.subject}
-EMAIL BODY:
-${email.body}
-
-Instructions:
-1. Write a COMPLETE email reply (not just a brief acknowledgment)
-2. Address all points mentioned in the original email
-3. Be professional, friendly, and helpful
-4. Provide specific information or answers where applicable
-5. Keep the tone conversational but professional
-6. Include a proper greeting and closing
-7. Make it ready to send without further editing
-
-Write ONLY the email reply text (no subject line, no "From:", just the email body):`;
-
-        const response = await axios.post(apiUrl, {
-            contents: [{
-                parts: [{
-                    text: prompt
-                }]
-            }]
-        });
-
-        const replyText = response.data.candidates[0].content.parts[0].text;
+        // Generate reply using AI Twin
+        const { text, personaId, personaName } = await generateAITwinEmailReply(email, req.userId);
 
         // Store reply draft
         const replyResult = await query(`
             INSERT INTO email_replies (message_id, user_id, persona_id, reply_text, confidence, mode)
-            VALUES ($1, $2, NULL, $3, 85, 'manual')
+            VALUES ($1, $2, $3, $4, 90, 'manual')
             RETURNING id
-        `, [email.id, req.userId, replyText]);
+        `, [email.id, req.userId, personaId, text]);
 
-        logger.info('Generated email reply', { userId: req.userId, messageId });
+        logger.info('Generated AI Twin email reply', { userId: req.userId, messageId, personaId });
         res.json({
             reply: {
                 id: replyResult.rows[0].id,
-                text: replyText,
-                confidence: 85,
-                rationale: 'AI-generated professional email reply'
+                text: text,
+                confidence: 90,
+                rationale: `Reply generated using ${personaName} AI Twin`
             }
         });
     } catch (error) {
