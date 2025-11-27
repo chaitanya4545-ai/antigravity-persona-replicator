@@ -9,10 +9,10 @@ export const apiLimiter = rateLimit({
     legacyHeaders: false,
 });
 
-// Strict limiter for auth endpoints
+// Strict limiter for auth endpoints (increased for testing)
 export const authLimiter = rateLimit({
     windowMs: 15 * 60 * 1000, // 15 minutes
-    max: 5, // Limit each IP to 5 login attempts per windowMs
+    max: 50, // Limit each IP to 50 login attempts per windowMs (increased from 5 for testing)
     message: 'Too many login attempts, please try again later.',
     skipSuccessfulRequests: true,
 });
