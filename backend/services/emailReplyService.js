@@ -2,7 +2,7 @@ import axios from 'axios';
 import { query } from '../db/connection.js';
 
 /**
- * Generate email reply using AI Twin persona
+ * Generate email reply using AI Twin persona (with fallback)
  */
 export async function generateAITwinEmailReply(email, userId) {
     // Get active persona
@@ -11,8 +11,9 @@ export async function generateAITwinEmailReply(email, userId) {
         [userId]
     );
 
+    // Fallback to professional reply if no persona
     if (personaResult.rows.length === 0) {
-        throw new Error('No active persona found. Please create and activate a persona first.');
+        return await generateProfessionalReply(email);
     }
 
     const persona = personaResult.rows[0];
@@ -36,7 +37,7 @@ export async function generateAITwinEmailReply(email, userId) {
     const prompt = `You are ${persona.name}, an AI Twin that writes emails exactly as the user would. You have access to recent conversations to understand the user's style and knowledge.
 
 RECENT CHAT HISTORY (your knowledge base):
-${chatContext}
+${chatContext || 'No chat history yet - use a professional but friendly tone.'}
 
 EMAIL TO REPLY TO:
 From: ${email.from_name || email.from_email}
@@ -69,5 +70,39 @@ Write the email reply (just the body text, no subject):`;
         text: replyText,
         personaId: persona.id,
         personaName: persona.name
+    };
+}
+
+/**
+ * Fallback: Generate professional email reply (no persona required)
+ */
+async function generateProfessionalReply(email) {
+    const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${process.env.GEMINI_API_KEY}`;
+
+    const prompt = `Write a professional, friendly email reply to the following email:
+
+FROM: ${email.from_name || email.from_email}
+SUBJECT: ${email.subject}
+EMAIL BODY:
+${email.body}
+
+Write a complete, helpful reply that addresses all points. Be professional but warm. Include greeting and closing.
+
+Write ONLY the email reply text (no subject):`;
+
+    const response = await axios.post(apiUrl, {
+        contents: [{
+            parts: [{
+                text: prompt
+            }]
+        }]
+    });
+
+    const replyText = response.data.candidates[0].content.parts[0].text;
+
+    return {
+        text: replyText,
+        personaId: null,
+        personaName: 'Professional Assistant'
     };
 }
