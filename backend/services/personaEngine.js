@@ -1,9 +1,4 @@
-import OpenAI from 'openai';
 import { query } from '../db/connection.js';
-
-const openai = new OpenAI({
-    apiKey: process.env.OPENAI_API_KEY || 'your-api-key-here',
-});
 
 export async function generateTwinReply(persona, message, options = {}) {
     const { mode = 'hybrid', toneShift = 0, riskTolerance = 50 } = options;
@@ -34,29 +29,23 @@ ${samples.substring(0, 1000)}
 Generate 3 candidate replies (Conservative, Normal, Bold) that match your persona.
 `;
 
-        // Call OpenAI API
-        const completion = await openai.chat.completions.create({
-            model: 'gpt-4',
-            messages: [
-                { role: 'system', content: systemPrompt },
-                { role: 'user', content: userPrompt },
-            ],
-            temperature: 0.7,
-            max_tokens: 1000,
-        });
+        // Use Google Gemini if API key is available
+        if (process.env.GEMINI_API_KEY) {
+            const { GoogleGenerativeAI } = await import('@google/generative-ai');
+            const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
+            const model = genAI.getGenerativeModel({ model: 'gemini-1.5-flash' });
 
-        const response = completion.choices[0].message.content;
+            const result = await model.generateContent(systemPrompt + '\n\n' + userPrompt);
+            const response = await result.response;
+            const responseText = response.text();
 
-        // Parse response into candidates
-        const candidates = parseCandidates(response);
-
-        // Update metrics
-        await query(
-            'UPDATE metrics SET tokens_used = tokens_used + $1 WHERE user_id = (SELECT user_id FROM personas WHERE id = $2)',
-            [completion.usage.total_tokens, persona.id]
-        );
-
-        return candidates;
+            // Parse response into candidates
+            const candidates = parseCandidates(responseText);
+            return candidates;
+        } else {
+            // Return fallback candidates if no API key
+            return generateFallbackCandidates(message);
+        }
     } catch (error) {
         console.error('Generate twin reply error:', error);
 
