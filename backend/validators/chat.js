@@ -1,6 +1,10 @@
-import { z } from 'zod';
+import Joi from 'joi';
 
 // Chat message schema
-export const chatMessageSchema = z.object({
-    message: z.string().min(1, 'Message cannot be empty').max(5000, 'Message too long'),
+export const chatMessageSchema = Joi.object({
+    message: Joi.string().min(1).max(5000).required().messages({
+        'string.min': 'Message cannot be empty',
+        'string.max': 'Message is too long (max 5000 characters)',
+        'any.required': 'Message is required'
+    }),
 });
