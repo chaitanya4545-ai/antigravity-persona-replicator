@@ -8,6 +8,7 @@ import activityRoutes from './routes/activity.js';
 import chatRoutes from './routes/chat.js';
 import threadRoutes from './routes/threads.js';
 import metricsRoutes from './routes/metrics.js';
+import emailRoutes from './routes/email.js';
 import logger from './utils/logger.js';
 import { apiLimiter } from './middleware/rateLimiter.js';
 
@@ -44,6 +45,7 @@ app.use('/api/activity', activityRoutes);
 app.use('/api/chat', chatRoutes);
 app.use('/api/threads', threadRoutes);
 app.use('/api/metrics', metricsRoutes);
+app.use('/api/email', emailRoutes);
 
 // Health check
 app.get('/health', (req, res) => {

@@ -233,6 +233,52 @@ const api = {
         const { data } = await apiClient.delete('/chat/clear');
         return data;
     },
+
+    // Email (Gmail Integration)
+    getEmailAuthUrl: async () => {
+        const { data } = await apiClient.get('/email/auth/url');
+        return data;
+    },
+
+    emailAuthCallback: async (code) => {
+        const { data } = await apiClient.post('/email/auth/callback', { code });
+        return data;
+    },
+
+    getEmailAccount: async () => {
+        const { data } = await apiClient.get('/email/account');
+        return data;
+    },
+
+    disconnectEmail: async () => {
+        const { data } = await apiClient.post('/email/disconnect');
+        return data;
+    },
+
+    getInbox: async () => {
+        const { data } = await apiClient.get('/email/inbox');
+        return data;
+    },
+
+    generateEmailReply: async (messageId) => {
+        const { data } = await apiClient.post('/email/generate-reply', { messageId });
+        return data;
+    },
+
+    sendEmailReply: async (replyId) => {
+        const { data } = await apiClient.post('/email/send-reply', { replyId });
+        return data;
+    },
+
+    getEmailSettings: async () => {
+        const { data } = await apiClient.get('/email/settings');
+        return data;
+    },
+
+    updateEmailSettings: async (settings) => {
+        const { data } = await apiClient.put('/email/settings', settings);
+        return data;
+    },
 };
 
 export default api;

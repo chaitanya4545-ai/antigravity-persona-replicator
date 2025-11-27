@@ -1,241 +1,290 @@
 import React, { useState, useEffect } from 'react';
 import api from '../services/api';
+import toast from 'react-hot-toast';
+import './InboxManager.css';
 
-export default function InboxManager({ persona }) {
-    const [inbox, setInbox] = useState([]);
-    const [selected, setSelected] = useState(null);
-    const [mode, setMode] = useState('hybrid');
-    const [toneShift, setToneShift] = useState(0);
-    const [riskTolerance, setRiskTolerance] = useState(50);
-    const [twinDraft, setTwinDraft] = useState('');
-    const [generating, setGenerating] = useState(false);
-    const [sending, setSending] = useState(false);
-    const [candidates, setCandidates] = useState(null);
+const InboxManager = () => {
+    const [account, setAccount] = useState(null);
+    const [emails, setEmails] = useState([]);
+    const [selectedEmail, setSelectedEmail] = useState(null);
+    const [reply, setReply] = useState(null);
+    const [loading, setLoading] = useState(false);
+    const [connecting, setConnecting] = useState(false);
 
     useEffect(() => {
-        loadInbox();
+        loadAccount();
     }, []);
+
+    useEffect(() => {
+        if (account) {
+            loadInbox();
+        }
+    }, [account]);
+
+    const loadAccount = async () => {
+        try {
+            const data = await api.getEmailAccount();
+            setAccount(data.account);
+        } catch (error) {
+            console.error('Error loading account:', error);
+        }
+    };
+
+    const handleConnectGmail = async () => {
+        try {
+            setConnecting(true);
+            const { authUrl } = await api.getEmailAuthUrl();
+
+            // Open OAuth popup
+            const width = 600;
+            const height = 700;
+            const left = window.screen.width / 2 - width / 2;
+            const top = window.screen.height / 2 - height / 2;
+
+            const popup = window.open(
+                authUrl,
+                'Gmail OAuth',
+                `width=${width},height=${height},left=${left},top=${top}`
+            );
+
+            // Listen for OAuth callback
+            const handleMessage = async (event) => {
+                if (event.data.type === 'gmail-auth-success') {
+                    const { code } = event.data;
+                    try {
+                        await api.emailAuthCallback(code);
+                        toast.success('Gmail connected successfully!');
+                        loadAccount();
+                        popup.close();
+                    } catch (error) {
+                        toast.error('Failed to connect Gmail');
+                    } finally {
+                        setConnecting(false);
+                        window.removeEventListener('message', handleMessage);
+                    }
+                }
+            };
+
+            window.addEventListener('message', handleMessage);
+
+            // Check if popup was closed
+            const checkClosed = setInterval(() => {
+                if (popup.closed) {
+                    clearInterval(checkClosed);
+                    setConnecting(false);
+                    window.removeEventListener('message', handleMessage);
+                }
+            }, 1000);
+        } catch (error) {
+            console.error('Error connecting Gmail:', error);
+            toast.error('Failed to initiate Gmail connection');
+            setConnecting(false);
+        }
+    };
+
+    const handleDisconnect = async () => {
+        if (!confirm('Are you sure you want to disconnect your Gmail account?')) return;
+
+        try {
+            await api.disconnectEmail();
+            setAccount(null);
+            setEmails([]);
+            setSelectedEmail(null);
+            setReply(null);
+            toast.success('Gmail disconnected');
+        } catch (error) {
+            toast.error('Failed to disconnect Gmail');
+        }
+    };
 
     const loadInbox = async () => {
         try {
-            const messages = await api.getInbox();
-            setInbox(messages);
+            setLoading(true);
+            const data = await api.getInbox();
+            setEmails(data.messages || []);
         } catch (error) {
-            console.error('Failed to load inbox:', error);
-        }
-    };
-
-    const generateTwinReply = async () => {
-        if (!selected) return;
-
-        setGenerating(true);
-        setCandidates(null);
-        try {
-            const result = await api.generateReply(selected.id, mode, toneShift, riskTolerance);
-            setCandidates(result.candidates);
-            // Set normal candidate as default
-            const normalCandidate = result.candidates.find(c => c.label === 'Normal');
-            setTwinDraft(normalCandidate?.text || result.candidates[0]?.text || '');
-        } catch (error) {
-            alert('Failed to generate reply: ' + error.message);
+            console.error('Error loading inbox:', error);
+            toast.error('Failed to load inbox');
         } finally {
-            setGenerating(false);
+            setLoading(false);
         }
     };
 
-    const approveAndSend = async () => {
-        if (!twinDraft || !selected) return;
+    const handleSelectEmail = (email) => {
+        setSelectedEmail(email);
+        setReply(null);
+    };
 
-        setSending(true);
+    const handleGenerateReply = async () => {
+        if (!selectedEmail) return;
+
         try {
-            await api.sendMessage(selected.id, twinDraft);
-            alert('Message sent successfully!');
-            setTwinDraft('');
-            setCandidates(null);
+            setLoading(true);
+            const data = await api.generateEmailReply(selectedEmail.message_id);
+            setReply(data.reply);
+            toast.success('Reply generated!');
+        } catch (error) {
+            console.error('Error generating reply:', error);
+            toast.error(error.response?.data?.error || 'Failed to generate reply');
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    const handleSendReply = async () => {
+        if (!reply) return;
+
+        try {
+            setLoading(true);
+            await api.sendEmailReply(reply.id);
+            toast.success('Reply sent!');
+            setReply(null);
+            setSelectedEmail(null);
             loadInbox();
         } catch (error) {
-            alert('Failed to send message: ' + error.message);
+            console.error('Error sending reply:', error);
+            toast.error('Failed to send reply');
         } finally {
-            setSending(false);
+            setLoading(false);
         }
     };
 
-    const selectCandidate = (candidate) => {
-        setTwinDraft(candidate.text);
-    };
+    if (!account) {
+        return (
+            <div className="inbox-manager">
+                <div className="email-connect-prompt">
+                    <h2>📧 Connect Your Gmail</h2>
+                    <p>Connect your Gmail account to start using the AI-powered email assistant.</p>
+                    <div className="connect-benefits">
+                        <div className="benefit">
+                            <span className="icon">✨</span>
+                            <span>AI-generated replies using your persona</span>
+                        </div>
+                        <div className="benefit">
+                            <span className="icon">⚡</span>
+                            <span>Automatic email processing</span>
+                        </div>
+                        <div className="benefit">
+                            <span className="icon">🔒</span>
+                            <span>Secure OAuth authentication</span>
+                        </div>
+                    </div>
+                    <button
+                        className="btn-primary btn-connect"
+                        onClick={handleConnectGmail}
+                        disabled={connecting}
+                    >
+                        {connecting ? 'Connecting...' : 'Connect Gmail'}
+                    </button>
+                    <p className="privacy-note">
+                        Your credentials are stored securely. You can disconnect anytime.
+                    </p>
+                </div>
+            </div>
+        );
+    }
 
     return (
-        <div className="card">
-            <div className="flex items-start justify-between mb-4">
-                <h2 className="text-xl font-bold text-slate-800">Inbox — Email MVP</h2>
-                <span className="text-xs text-slate-500 bg-slate-100 px-2 py-1 rounded">
-                    {inbox.length} messages
-                </span>
+        <div className="inbox-manager">
+            <div className="inbox-header">
+                <div className="account-info">
+                    <h2>📧 Inbox Manager</h2>
+                    <p className="connected-email">
+                        <span className="status-dot"></span>
+                        {account.email_address}
+                    </p>
+                </div>
+                <div className="inbox-actions">
+                    <button className="btn-secondary" onClick={loadInbox} disabled={loading}>
+                        {loading ? 'Refreshing...' : '🔄 Refresh'}
+                    </button>
+                    <button className="btn-danger" onClick={handleDisconnect}>
+                        Disconnect
+                    </button>
+                </div>
             </div>
 
-            <div className="grid grid-cols-3 gap-4">
-                {/* Message List */}
-                <div className="col-span-2">
-                    <div className="bg-slate-50 rounded-lg border border-slate-200 max-h-96 overflow-y-auto">
-                        {inbox.length === 0 ? (
-                            <div className="p-8 text-center text-slate-400">
-                                <p>No messages yet</p>
-                                <p className="text-xs mt-2">Connect your email to see messages here</p>
+            <div className="inbox-content">
+                <div className="email-list">
+                    <h3>Unread Emails ({emails.length})</h3>
+                    {loading && <div className="loading">Loading...</div>}
+                    {!loading && emails.length === 0 && (
+                        <div className="empty-state">
+                            <p>📭 No unread emails</p>
+                        </div>
+                    )}
+                    {emails.map((email) => (
+                        <div
+                            key={email.message_id}
+                            className={`email-item ${selectedEmail?.message_id === email.message_id ? 'selected' : ''}`}
+                            onClick={() => handleSelectEmail(email)}
+                        >
+                            <div className="email-from">{email.from_name || email.from_email}</div>
+                            <div className="email-subject">{email.subject}</div>
+                            <div className="email-snippet">{email.snippet}</div>
+                            <div className="email-date">
+                                {new Date(email.received_at).toLocaleDateString()}
                             </div>
-                        ) : (
-                            <ul className="divide-y divide-slate-200">
-                                {inbox.map((msg) => (
-                                    <li
-                                        key={msg.id}
-                                        onClick={() => setSelected(msg)}
-                                        className={`p-4 cursor-pointer transition-colors ${selected?.id === msg.id
-                                                ? 'bg-indigo-50 border-l-4 border-indigo-600'
-                                                : 'hover:bg-slate-100'
-                                            }`}
-                                    >
-                                        <div className="flex justify-between items-start">
-                                            <div className="flex-1">
-                                                <div className="text-sm font-semibold text-slate-800">
-                                                    {msg.from}
-                                                </div>
-                                                <div className="text-sm text-slate-600 mt-1">{msg.subject}</div>
-                                                <div className="text-xs text-slate-500 mt-1 truncate">
-                                                    {msg.snippet}
-                                                </div>
-                                            </div>
-                                            <div className="text-xs text-slate-400 ml-2">{msg.received}</div>
-                                        </div>
-                                    </li>
-                                ))}
-                            </ul>
+                        </div>
+                    ))}
+                </div>
+
+                {selectedEmail && (
+                    <div className="email-preview">
+                        <div className="email-header">
+                            <h3>{selectedEmail.subject}</h3>
+                            <p className="email-meta">
+                                From: {selectedEmail.from_email}<br />
+                                Date: {new Date(selectedEmail.received_at).toLocaleString()}
+                            </p>
+                        </div>
+                        <div className="email-body">
+                            {selectedEmail.body}
+                        </div>
+                        {!reply && (
+                            <button
+                                className="btn-primary"
+                                onClick={handleGenerateReply}
+                                disabled={loading}
+                            >
+                                {loading ? 'Generating...' : '✨ Generate AI Reply'}
+                            </button>
                         )}
                     </div>
-                </div>
-
-                {/* Mode Controls */}
-                <div className="col-span-1">
-                    <div className="space-y-4">
-                        <div>
-                            <label className="block text-sm font-medium text-slate-700 mb-2">Mode</label>
-                            <div className="flex flex-col gap-2">
-                                {['ghost', 'auto', 'hybrid'].map((m) => (
-                                    <button
-                                        key={m}
-                                        onClick={() => setMode(m)}
-                                        className={`py-2 px-3 rounded-lg text-sm font-medium transition-all ${mode === m
-                                                ? 'bg-indigo-600 text-white shadow-md'
-                                                : 'bg-slate-100 text-slate-700 hover:bg-slate-200'
-                                            }`}
-                                    >
-                                        {m.charAt(0).toUpperCase() + m.slice(1)}
-                                    </button>
-                                ))}
-                            </div>
-                        </div>
-
-                        <div>
-                            <label className="block text-sm font-medium text-slate-700 mb-2">
-                                Tone Shift: {toneShift}
-                            </label>
-                            <input
-                                type="range"
-                                min="-10"
-                                max="10"
-                                value={toneShift}
-                                onChange={(e) => setToneShift(Number(e.target.value))}
-                                className="w-full accent-indigo-600"
-                            />
-                            <p className="text-xs text-slate-500 mt-1">Adjust phrasing style</p>
-                        </div>
-
-                        <div>
-                            <label className="block text-sm font-medium text-slate-700 mb-2">
-                                Risk: {riskTolerance}%
-                            </label>
-                            <input
-                                type="range"
-                                min="0"
-                                max="100"
-                                value={riskTolerance}
-                                onChange={(e) => setRiskTolerance(Number(e.target.value))}
-                                className="w-full accent-indigo-600"
-                            />
-                            <p className="text-xs text-slate-500 mt-1">Higher = bolder</p>
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            {/* Twin Reply Section */}
-            <div className="mt-6 border-t border-slate-200 pt-6">
-                <h3 className="font-semibold text-slate-800 mb-3">Twin Suggestion</h3>
-
-                {selected ? (
-                    <div className="bg-indigo-50 rounded-lg p-3 mb-3 border border-indigo-100">
-                        <div className="text-sm">
-                            <span className="font-medium text-indigo-900">Selected:</span>{' '}
-                            <span className="text-indigo-700">{selected.subject}</span>
-                        </div>
-                        <div className="text-xs text-indigo-600 mt-1">From: {selected.from}</div>
-                    </div>
-                ) : (
-                    <div className="bg-slate-50 rounded-lg p-4 mb-3 text-center text-slate-500 text-sm">
-                        Select an email to generate a twin reply
-                    </div>
                 )}
 
-                <div className="flex gap-2 mb-3">
-                    <button
-                        onClick={generateTwinReply}
-                        disabled={!selected || generating || !persona}
-                        className="btn-primary disabled:opacity-50 disabled:cursor-not-allowed"
-                    >
-                        {generating ? 'Generating...' : 'Generate Reply'}
-                    </button>
-                    <button onClick={() => setTwinDraft('')} className="btn-secondary">
-                        Clear
-                    </button>
-                </div>
-
-                {/* Candidate Selection */}
-                {candidates && (
-                    <div className="mb-3 grid grid-cols-3 gap-2">
-                        {candidates.map((candidate) => (
+                {reply && (
+                    <div className="reply-draft">
+                        <h3>AI-Generated Reply</h3>
+                        <div className="reply-confidence">
+                            Confidence: {reply.confidence}%
+                        </div>
+                        <textarea
+                            className="reply-text"
+                            value={reply.text}
+                            onChange={(e) => setReply({ ...reply, text: e.target.value })}
+                            rows={10}
+                        />
+                        <div className="reply-actions">
                             <button
-                                key={candidate.label}
-                                onClick={() => selectCandidate(candidate)}
-                                className={`p-2 rounded-lg text-xs border transition-all ${twinDraft === candidate.text
-                                        ? 'bg-indigo-100 border-indigo-600 text-indigo-900'
-                                        : 'bg-slate-50 border-slate-200 hover:bg-slate-100'
-                                    }`}
+                                className="btn-primary"
+                                onClick={handleSendReply}
+                                disabled={loading}
                             >
-                                <div className="font-semibold">{candidate.label}</div>
-                                <div className="text-slate-600">
-                                    Confidence: {candidate.confidence}%
-                                </div>
+                                {loading ? 'Sending...' : '📤 Send Reply'}
                             </button>
-                        ))}
+                            <button
+                                className="btn-secondary"
+                                onClick={() => setReply(null)}
+                            >
+                                Cancel
+                            </button>
+                        </div>
                     </div>
                 )}
-
-                <textarea
-                    value={twinDraft}
-                    onChange={(e) => setTwinDraft(e.target.value)}
-                    placeholder="Twin suggestion will appear here..."
-                    className="w-full h-32 p-3 rounded-lg border border-slate-300 focus:outline-none focus:ring-2 focus:ring-indigo-500 text-sm"
-                />
-
-                <div className="flex gap-2 mt-3">
-                    <button
-                        onClick={approveAndSend}
-                        disabled={!twinDraft || sending}
-                        className="px-4 py-2 bg-emerald-600 text-white rounded-lg font-medium hover:bg-emerald-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-                    >
-                        {sending ? 'Sending...' : 'Approve & Send'}
-                    </button>
-                    <button className="btn-secondary">Save as Template</button>
-                </div>
             </div>
         </div>
     );
-}
+};
+
+export default InboxManager;

@@ -1,0 +1,236 @@
+.inbox-manager {
+    padding: 2rem;
+    max-width: 1400px;
+    margin: 0 auto;
+}
+
+.email-connect-prompt {
+    text-align: center;
+    padding: 4rem 2rem;
+    max-width: 600px;
+    margin: 0 auto;
+}
+
+.email-connect-prompt h2 {
+    font-size: 2rem;
+    margin-bottom: 1rem;
+}
+
+.connect-benefits {
+    margin: 2rem 0;
+    text-align: left;
+}
+
+.benefit {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    padding: 1rem;
+    margin: 0.5rem 0;
+    background: var(--bg-secondary);
+    border-radius: 8px;
+}
+
+.benefit .icon {
+    font-size: 1.5rem;
+}
+
+.btn-connect {
+    margin: 2rem 0 1rem;
+    padding: 1rem 2rem;
+    font-size: 1.1rem;
+}
+
+.privacy-note {
+    color: var(--text-secondary);
+    font-size: 0.9rem;
+}
+
+.inbox-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 2rem;
+    padding-bottom: 1rem;
+    border-bottom: 2px solid var(--border-color);
+}
+
+.account-info h2 {
+    margin: 0 0 0.5rem 0;
+}
+
+.connected-email {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    color: var(--text-secondary);
+}
+
+.status-dot {
+    width: 8px;
+    height: 8px;
+    background: #4caf50;
+    border-radius: 50%;
+    display: inline-block;
+}
+
+.inbox-actions {
+    display: flex;
+    gap: 1rem;
+}
+
+.inbox-content {
+    display: grid;
+    grid-template-columns: 400px 1fr;
+    gap: 2rem;
+    height: calc(100vh - 250px);
+}
+
+.email-list {
+    border-right: 1px solid var(--border-color);
+    padding-right: 1rem;
+    overflow-y: auto;
+}
+
+.email-list h3 {
+    margin-bottom: 1rem;
+    color: var(--text-secondary);
+    font-size: 0.9rem;
+    text-transform: uppercase;
+}
+
+.email-item {
+    padding: 1rem;
+    border-radius: 8px;
+    margin-bottom: 0.5rem;
+    cursor: pointer;
+    transition: all 0.2s;
+    border: 1px solid transparent;
+}
+
+.email-item:hover {
+    background: var(--bg-secondary);
+}
+
+.email-item.selected {
+    background: var(--primary-color);
+    color: white;
+    border-color: var(--primary-color);
+}
+
+.email-from {
+    font-weight: 600;
+    margin-bottom: 0.25rem;
+}
+
+.email-subject {
+    font-size: 0.95rem;
+    margin-bottom: 0.25rem;
+}
+
+.email-snippet {
+    font-size: 0.85rem;
+    color: var(--text-secondary);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.email-item.selected .email-snippet {
+    color: rgba(255, 255, 255, 0.8);
+}
+
+.email-date {
+    font-size: 0.8rem;
+    color: var(--text-secondary);
+    margin-top: 0.5rem;
+}
+
+.email-item.selected .email-date {
+    color: rgba(255, 255, 255, 0.7);
+}
+
+.email-preview {
+    overflow-y: auto;
+    padding: 1rem;
+    background: var(--bg-secondary);
+    border-radius: 8px;
+}
+
+.email-header h3 {
+    margin: 0 0 1rem 0;
+}
+
+.email-meta {
+    color: var(--text-secondary);
+    font-size: 0.9rem;
+    margin-bottom: 1.5rem;
+    padding-bottom: 1rem;
+    border-bottom: 1px solid var(--border-color);
+}
+
+.email-body {
+    white-space: pre-wrap;
+    line-height: 1.6;
+    margin-bottom: 2rem;
+}
+
+.reply-draft {
+    margin-top: 2rem;
+    padding: 1.5rem;
+    background: var(--bg-primary);
+    border-radius: 8px;
+    border: 2px solid var(--primary-color);
+}
+
+.reply-draft h3 {
+    margin: 0 0 1rem 0;
+}
+
+.reply-confidence {
+    color: var(--text-secondary);
+    font-size: 0.9rem;
+    margin-bottom: 1rem;
+}
+
+.reply-text {
+    width: 100%;
+    padding: 1rem;
+    border: 1px solid var(--border-color);
+    border-radius: 4px;
+    font-family: inherit;
+    font-size: 1rem;
+    resize: vertical;
+    margin-bottom: 1rem;
+}
+
+.reply-actions {
+    display: flex;
+    gap: 1rem;
+}
+
+.empty-state {
+    text-align: center;
+    padding: 3rem 1rem;
+    color: var(--text-secondary);
+}
+
+.loading {
+    text-align: center;
+    padding: 2rem;
+    color: var(--text-secondary);
+}
+
+@media (max-width: 768px) {
+    .inbox-content {
+        grid-template-columns: 1fr;
+        height: auto;
+    }
+
+    .email-list {
+        border-right: none;
+        border-bottom: 1px solid var(--border-color);
+        padding-bottom: 1rem;
+        margin-bottom: 1rem;
+    }
+}
