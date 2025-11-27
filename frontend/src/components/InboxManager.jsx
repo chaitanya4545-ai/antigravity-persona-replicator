@@ -255,21 +255,36 @@ const InboxManager = () => {
 
                 {reply && (
                     <div className="reply-draft">
-                        <h3>AI-Generated Reply</h3>
+                        <h3>✨ AI-Generated Reply</h3>
                         <div className="reply-confidence">
-                            Confidence: {reply.confidence}%
+                            Confidence: {reply.confidence}% • {reply.rationale}
                         </div>
-                        <textarea
-                            className="reply-text"
-                            value={reply.text}
-                            onChange={(e) => setReply({ ...reply, text: e.target.value })}
-                            rows={10}
-                        />
+                        <div style={{ position: 'relative' }}>
+                            <textarea
+                                className="reply-text"
+                                value={reply.text}
+                                onChange={(e) => setReply({ ...reply, text: e.target.value })}
+                                rows={10}
+                                placeholder="Edit your reply here..."
+                            />
+                            <div style={{
+                                position: 'absolute',
+                                bottom: '8px',
+                                right: '8px',
+                                fontSize: '12px',
+                                color: '#888',
+                                background: 'rgba(255,255,255,0.9)',
+                                padding: '2px 6px',
+                                borderRadius: '4px'
+                            }}>
+                                {reply.text.length} characters
+                            </div>
+                        </div>
                         <div className="reply-actions">
                             <button
                                 className="btn-primary"
                                 onClick={handleSendReply}
-                                disabled={loading}
+                                disabled={loading || !reply.text.trim()}
                             >
                                 {loading ? 'Sending...' : '📤 Send Reply'}
                             </button>
@@ -277,13 +292,20 @@ const InboxManager = () => {
                                 className="btn-secondary"
                                 onClick={() => setReply(null)}
                             >
-                                Cancel
+                                🗑️ Discard
+                            </button>
+                            <button
+                                className="btn-secondary"
+                                onClick={handleGenerateReply}
+                                disabled={loading}
+                            >
+                                🔄 Regenerate
                             </button>
                         </div>
                     </div>
                 )}
             </div>
-        </div>
+        </div >
     );
 };
 
