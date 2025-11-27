@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Toaster } from 'react-hot-toast';
+import toast, { Toaster } from 'react-hot-toast';
 import PersonaIngestion from './components/PersonaIngestion';
 import InboxManager from './components/InboxManager';
 import ActivityPanel from './components/ActivityPanel';
