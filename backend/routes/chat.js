@@ -24,6 +24,21 @@ router.post('/assistant', authMiddleware, chatLimiter, validate(chatMessageSchem
     try {
         const { message } = req.body;
 
+        // Check if API key is configured
+        if (!process.env.GEMINI_API_KEY) {
+            logger.error('GEMINI_API_KEY not configured', { userId: req.userId });
+            return res.status(200).json({
+                error: 'AI Assistant is not configured. Please contact administrator.',
+                message: 'Sorry, the AI Assistant is currently unavailable. Please try again later or contact support.'
+            });
+        }
+
+        // Save user message to database
+        await query(
+            'INSERT INTO chat_messages (user_id, role, content) VALUES ($1, $2, $3)',
+            [req.userId, 'user', message]
+        );
+
         // Use Google Gemini
         const { GoogleGenerativeAI } = await import('@google/generative-ai');
         const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
@@ -33,6 +48,12 @@ router.post('/assistant', authMiddleware, chatLimiter, validate(chatMessageSchem
         const response = await result.response;
         const responseText = response.text();
 
+        // Save assistant response to database
+        await query(
+            'INSERT INTO chat_messages (user_id, role, content) VALUES ($1, $2, $3)',
+            [req.userId, 'assistant', responseText]
+        );
+
         logger.info('AI Assistant response generated', { userId: req.userId, messageLength: message.length });
         res.json({
             message: responseText,
@@ -40,8 +61,13 @@ router.post('/assistant', authMiddleware, chatLimiter, validate(chatMessageSchem
             rationale: 'Powered by Google Gemini',
         });
     } catch (error) {
-        logger.error('Gemini error', { error: error.message, userId: req.userId });
-        res.status(500).json({ error: 'Failed: ' + error.message });
+        logger.error('Gemini error', { error: error.message, stack: error.stack, userId: req.userId });
+
+        // Return 200 with error message to avoid triggering logout
+        res.status(200).json({
+            error: error.message,
+            message: 'Sorry, I encountered an error. Please try again or contact support if the issue persists.'
+        });
     }
 });
 
@@ -51,15 +77,25 @@ router.post('/message', authMiddleware, chatLimiter, validate(chatMessageSchema)
         const { message } = req.body;
 
         const personaResult = await query(
-            'SELECT * FROM personas WHERE user_id = $1 ORDER BY created_at DESC LIMIT 1',
+            'SELECT * FROM personas WHERE user_id = $1 AND is_active = true LIMIT 1',
             [req.userId]
         );
 
         if (personaResult.rows.length === 0) {
-            return res.status(404).json({ error: 'Persona not found. Upload samples first.' });
+            return res.status(200).json({
+                error: 'No active persona found',
+                message: 'Please create and activate a persona first by uploading training samples in the "Train Persona" section.'
+            });
         }
 
         const persona = personaResult.rows[0];
+
+        // Save user message to database
+        await query(
+            'INSERT INTO chat_messages (user_id, role, content) VALUES ($1, $2, $3)',
+            [req.userId, 'user', message]
+        );
+
         const mockMessage = { from_email: 'user', subject: 'Chat', body: message };
 
         const candidates = await generateTwinReply(persona, mockMessage, {
@@ -70,6 +106,12 @@ router.post('/message', authMiddleware, chatLimiter, validate(chatMessageSchema)
 
         const response = candidates.find(c => c.label === 'Normal') || candidates[0];
 
+        // Save twin response to database
+        await query(
+            'INSERT INTO chat_messages (user_id, role, content) VALUES ($1, $2, $3)',
+            [req.userId, 'twin', response.text]
+        );
+
         logger.info('AI Twin response generated', { userId: req.userId, personaId: persona.id });
         res.json({
             message: response.text,
@@ -77,8 +119,13 @@ router.post('/message', authMiddleware, chatLimiter, validate(chatMessageSchema)
             rationale: response.rationale,
         });
     } catch (error) {
-        logger.error('Twin error', { error: error.message, userId: req.userId });
-        res.status(500).json({ error: 'Failed: ' + error.message });
+        logger.error('Twin error', { error: error.message, stack: error.stack, userId: req.userId });
+
+        // Return 200 with error message to avoid triggering logout
+        res.status(200).json({
+            error: error.message,
+            message: 'Sorry, I encountered an error generating a response. Please try again.'
+        });
     }
 });
 
@@ -162,12 +209,31 @@ router.get('/export/csv', authMiddleware, async (req, res) => {
 
 // Get history
 router.get('/history', authMiddleware, async (req, res) => {
-    res.json([]);  // Return empty for now
+    try {
+        const result = await query(
+            'SELECT * FROM chat_messages WHERE user_id = $1 ORDER BY created_at ASC',
+            [req.userId]
+        );
+
+        logger.info('Chat history retrieved', { userId: req.userId, messageCount: result.rows.length });
+        res.json(result.rows);
+    } catch (error) {
+        logger.error('Get history error', { error: error.message, userId: req.userId });
+        res.status(500).json({ error: 'Failed to get history' });
+    }
 });
 
 // Clear history
 router.delete('/clear', authMiddleware, async (req, res) => {
-    res.json({ message: 'Cleared' });
+    try {
+        await query('DELETE FROM chat_messages WHERE user_id = $1', [req.userId]);
+
+        logger.info('Chat history cleared', { userId: req.userId });
+        res.json({ message: 'Chat history cleared successfully' });
+    } catch (error) {
+        logger.error('Clear history error', { error: error.message, userId: req.userId });
+        res.status(500).json({ error: 'Failed to clear history' });
+    }
 });
 
 export default router;
