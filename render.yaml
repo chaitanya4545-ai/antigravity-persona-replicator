@@ -6,7 +6,7 @@
       "env": "node",
       "rootDir": "backend",
       "buildCommand": "npm install",
-      "startCommand": "npm run migrate && npm start",
+      "startCommand": "npm start",
       "envVars": [
         {
           "key": "NODE_ENV",
@@ -17,7 +17,7 @@
           "generateValue": true
         },
         {
-          "key": "OPENAI_API_KEY",
+          "key": "GEMINI_API_KEY",
           "sync": false
         },
         {
