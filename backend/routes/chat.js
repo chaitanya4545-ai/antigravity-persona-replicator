@@ -42,7 +42,7 @@ router.post('/assistant', authMiddleware, chatLimiter, validate(chatMessageSchem
         // Use Google Gemini with updated model name
         const { GoogleGenerativeAI } = await import('@google/generative-ai');
         const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
-        const model = genAI.getGenerativeModel({ model: 'gemini-1.5-pro' });
+        const model = genAI.getGenerativeModel({ model: 'gemini-pro' });
 
         const result = await model.generateContent(message);
         const response = await result.response;
